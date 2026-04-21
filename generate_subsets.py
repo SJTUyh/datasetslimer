@@ -3,6 +3,7 @@ import json
 import argparse
 import pandas as pd
 import numpy as np
+import warnings
 from sklearn.cluster import KMeans
 from sklearn.utils import resample
 
@@ -44,7 +45,9 @@ def compute_kmeans(data: pd.DataFrame, n_clusters: int, random_state: int = 42) 
     - Cluster labels and centers
     """
     kmeans = KMeans(n_clusters=n_clusters, random_state=random_state)
-    kmeans.fit(data)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', message='Number of distinct clusters.*found smaller than n_clusters.*')
+        kmeans.fit(data)
     return kmeans.labels_, kmeans.cluster_centers_
 
 def draw_representative_sample(data: pd.DataFrame, labels: np.ndarray, n: int, random_state: int = 1, difficulty_map: dict = None) -> pd.DataFrame:
@@ -80,7 +83,9 @@ def draw_representative_sample(data: pd.DataFrame, labels: np.ndarray, n: int, r
     remaining_indices = np.ones(len(data), dtype=bool)
 
     kmeans = KMeans(n_clusters=n_clusters, random_state=random_state)
-    kmeans.fit(data_numeric)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', message='Number of distinct clusters.*found smaller than n_clusters.*')
+        kmeans.fit(data_numeric)
     centroids = kmeans.cluster_centers_
 
     # Select points closest to centroids
@@ -172,11 +177,13 @@ def save_sample_and_ids(sample: pd.DataFrame, name: str, data_dir: Path) -> None
     with open(data_dir / f"{name}_ids.json", 'w') as f:
         json.dump(sample["id"].tolist(), f)
 
-def calculate_optimal_parameters(data_size: int, compression_ratio: float = 0.1) -> tuple[int, int]:
+def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression_ratio: float = 0.1) -> tuple[int, int]:
     """
     Calculate optimal n_clusters and n_samples based on data size and compression ratio.
+    Also ensures n_clusters doesn't exceed the number of unique data combinations.
 
     Parameters:
+    - data: DataFrame to check for unique data combinations
     - data_size: Total number of samples in dataset
     - compression_ratio: Target compression ratio (0-1)
 
@@ -185,8 +192,24 @@ def calculate_optimal_parameters(data_size: int, compression_ratio: float = 0.1)
     """
     n_samples = max(int(data_size * compression_ratio), 10)
     n_samples = min(n_samples, data_size)
-    n_clusters = min(int(np.sqrt(n_samples)), n_samples)
+
+    # Calculate number of unique data combinations (excluding id column)
+    if 'id' in data.columns:
+        unique_data = data.drop(columns=['id']).drop_duplicates()
+    else:
+        unique_data = data.drop_duplicates()
+    n_unique = len(unique_data)
+
+    # Calculate initial n_clusters
+    initial_n_clusters = min(int(np.sqrt(n_samples)), n_samples)
+    # Ensure n_clusters doesn't exceed the number of unique data combinations
+    n_clusters = min(initial_n_clusters, n_unique)
     n_clusters = max(n_clusters, 2)
+
+    # Print warning if clusters were adjusted
+    if initial_n_clusters > n_unique:
+        print(f"  Warning: Only {n_unique} unique data combinations found, adjusted n_clusters from {initial_n_clusters} to {n_clusters}")
+
     return n_clusters, n_samples
 
 def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, random_dir: Path, compression_ratio: float, random_state: int = 42) -> tuple[dict, dict]:
@@ -214,7 +237,7 @@ def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, ran
     print(f"  Loaded {dataset_name} with {data_size} samples")
 
     # Calculate optimal parameters
-    n_clusters, n_samples = calculate_optimal_parameters(data_size, compression_ratio)
+    n_clusters, n_samples = calculate_optimal_parameters(data, data_size, compression_ratio)
     print(f"  Optimal parameters: n_clusters={n_clusters}, n_samples={n_samples}")
 
     # Prepare data

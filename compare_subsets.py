@@ -3,6 +3,7 @@ import json
 import argparse
 import pandas as pd
 import numpy as np
+import warnings
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -198,6 +199,9 @@ def main(original_dir: str,
          compressed_dir: str,
          figures_dir: str = "figures") -> None:
     """Compare multiple datasets using various metrics."""
+    # Filter out RuntimeWarning about invalid values in divide
+    warnings.filterwarnings('ignore', category=RuntimeWarning, message='invalid value encountered in divide')
+
     # Create figures directory
     figures_path = Path(figures_dir)
     figures_path.mkdir(exist_ok=True, parents=True)

@@ -44,7 +44,7 @@ datasetslimer/
 #### 从头生成数据集
 
 ```bash
-python generate_random_metadata.py --num_subsets 3 --case_range 100 200 --output_dir ./multi_data_sample
+python generate_random_metadata.py --num_subsets 3 --case_range 100 200 --score_types "score0" "score1" "score2" --output_dir ./multi_data_sample
 ```
 
 #### 使用现有 info.json 生成
@@ -62,7 +62,7 @@ python generate_random_metadata.py --info_file info_sample.json --output_dir ./m
       {
           "name": "random_metadata0",    // 数据集名称
           "count": 160,                   // 样本数量
-          "avg_scores": [0.05, 0.44, 0.35],  // 各分数列的平均值
+          "avg_scores": [0.05, 0.44, 0.35],  // 各分数列的平均值, 例如模拟多个模型的平均分数
           "difficulty_map": {             // 难度映射
               "level0": 0,
               "level1": 1,

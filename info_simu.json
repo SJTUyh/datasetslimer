@@ -1,0 +1,112 @@
+[
+    {
+        "name": "coding",
+        "count": 942,
+        "avg_scores": [
+            0.2760,
+            0.2652
+        ],
+        "difficulty_map": {
+            "level0": 0
+        }
+    },
+    {
+        "name": "long_content",
+        "count": 1344,
+        "avg_scores": [
+            0.5039,
+            0.5026
+        ],
+        "difficulty_map": {
+            "level0": 0
+        }
+    },
+    {
+        "name": "logical_infer",
+        "count": 1788,
+        "avg_scores": [
+            0.5796,
+            0.5844
+        ],
+        "difficulty_map": {
+            "level0": 0
+        }
+    },
+    {
+        "name": "science",
+        "count": 2079,
+        "avg_scores": [
+            0.5564,
+            0.5716
+        ],
+        "difficulty_map": {
+            "level0": 0
+        }
+    },
+    {
+        "name": "knowledge_qa",
+        "count": 2541,
+        "avg_scores": [
+            0.4014,
+            0.4265
+        ],
+        "difficulty_map": {
+            "level0": 0
+        }
+    },
+    {
+        "name": "text_understanding",
+        "count": 972,
+        "avg_scores": [
+            0.6584,
+            0.6790
+        ],
+        "difficulty_map": {
+            "level0": 0
+        }
+    },
+    {
+        "name": "math",
+        "count": 2172,
+        "avg_scores": [
+            0.4563,
+            0.4567
+        ],
+        "difficulty_map": {
+            "level0": 0
+        }
+    },
+    {
+        "name": "multi_turn",
+        "count": 1680,
+        "avg_scores": [
+            0.6402,
+            0.5810
+        ],
+        "difficulty_map": {
+            "level0": 0
+        }
+    },
+    {
+        "name": "complex_instruction",
+        "count": 1005,
+        "avg_scores": [
+            0.7165,
+            0.7355
+        ],
+        "difficulty_map": {
+            "level0": 0
+        }
+    },
+    {
+        "name": "professional_domain",
+        "count": 1005,
+        "avg_scores": [
+            0.5359,
+            0.4902
+        ],
+        "difficulty_map": {
+            "level0": 0
+        }
+    }
+]

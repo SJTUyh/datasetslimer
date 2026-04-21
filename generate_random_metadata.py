@@ -34,7 +34,11 @@ def generate_info(num_subsets, max_dimension, max_avg, num_score_types):
 
 
 def generate_csv_file(file_path, subset_info, case_range, score_types):
-    num_cases = random.randint(case_range[0], case_range[1])
+    # 如果 subset_info 中已经有 count，则使用它；否则随机生成
+    if 'count' in subset_info and subset_info['count'] > 0:
+        num_cases = subset_info['count']
+    else:
+        num_cases = random.randint(case_range[0], case_range[1])
     difficulty_map = subset_info['difficulty_map']
     avg_scores = subset_info['avg_scores']
     difficulties = list(difficulty_map.keys())
@@ -84,8 +88,18 @@ def main():
 
         for subset in info:
             csv_path = os.path.join(args.output_dir, f'{subset["name"]}.csv')
-            num_cases = generate_csv_file(csv_path, subset, args.case_range, args.score_types)
-            subset['count'] = num_cases
+            # 根据 avg_scores 长度自动确定 score_types
+            num_scores = len(subset['avg_scores'])
+            # 如果用户没有明确指定 score_types，则使用默认格式
+            if args.score_types == ['score0', 'score1', 'score2']:
+                used_score_types = [f'score{i}' for i in range(num_scores)]
+            else:
+                used_score_types = args.score_types
+                # 检查长度是否匹配
+                if len(used_score_types) != num_scores:
+                    print(f'Warning: score_types length ({len(used_score_types)}) does not match avg_scores length ({num_scores}) for {subset["name"]}')
+                    used_score_types = [f'score{i}' for i in range(num_scores)]
+            num_cases = generate_csv_file(csv_path, subset, args.case_range, used_score_types)
             print(f'Generated {csv_path} with {num_cases} cases')
 
         output_info_path = os.path.join(args.output_dir, 'info.json')

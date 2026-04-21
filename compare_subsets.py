@@ -78,7 +78,7 @@ def compare_means_single(dataset_name: str, full_data: pd.DataFrame, representat
 
     return means_df
 
-def compare_difficulty_distributions_single(dataset_name: str, samples: dict[str, pd.DataFrame],
+def compare_difficulty_distributions_single(dataset_name: str, samples: dict,
                                             figures_path: Path) -> pd.DataFrame:
     """Compare and plot difficulty distributions across samples for a single dataset."""
     distributions = {}
@@ -116,7 +116,7 @@ def compare_difficulty_distributions_single(dataset_name: str, samples: dict[str
 
     return dist_df
 
-def compare_correlation_patterns(full_data: pd.DataFrame, subset_data: pd.DataFrame) -> tuple[float, float]:
+def compare_correlation_patterns(full_data: pd.DataFrame, subset_data: pd.DataFrame) -> tuple:
     """Compare correlation patterns between full dataset and subset."""
     if len(full_data.columns) < 2 or len(subset_data.columns) < 2:
         return np.nan, np.nan

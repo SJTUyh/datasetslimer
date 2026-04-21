@@ -177,15 +177,17 @@ def save_sample_and_ids(sample: pd.DataFrame, name: str, data_dir: Path) -> None
     with open(data_dir / f"{name}_ids.json", 'w') as f:
         json.dump(sample["id"].tolist(), f)
 
-def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression_ratio: float = 0.1) -> tuple:
+def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression_ratio: float = 0.1, n_cluster: int = None) -> tuple:
     """
     Calculate optimal n_clusters and n_samples based on data size and compression ratio.
     Also ensures n_clusters doesn't exceed the number of unique data combinations.
+    If n_cluster is provided, use that value (with validation).
 
     Parameters:
     - data: DataFrame to check for unique data combinations
     - data_size: Total number of samples in dataset
     - compression_ratio: Target compression ratio (0-1)
+    - n_cluster: Optional predefined number of clusters
 
     Returns:
     - Tuple of (n_clusters, n_samples)
@@ -200,15 +202,27 @@ def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression
         unique_data = data.drop_duplicates()
     n_unique = len(unique_data)
 
-    # Calculate initial n_clusters
-    initial_n_clusters = min(int(np.sqrt(n_samples)), n_samples)
-    # Ensure n_clusters doesn't exceed the number of unique data combinations
-    n_clusters = min(initial_n_clusters, n_unique)
-    n_clusters = max(n_clusters, 2)
+    # Handle n_cluster if provided
+    if n_cluster is not None:
+        n_clusters = n_cluster
+        print(f"  Using n_cluster={n_clusters} from info.json")
+    else:
+        # Calculate initial n_clusters
+        initial_n_clusters = min(int(np.sqrt(n_samples)), n_samples)
+        # Ensure n_clusters doesn't exceed the number of unique data combinations
+        n_clusters = min(initial_n_clusters, n_unique)
+        n_clusters = max(n_clusters, 2)
 
-    # Print warning if clusters were adjusted
-    if initial_n_clusters > n_unique:
-        print(f"  Warning: Only {n_unique} unique data combinations found, adjusted n_clusters from {initial_n_clusters} to {n_clusters}")
+        # Print warning if clusters were adjusted
+        if initial_n_clusters > n_unique:
+            print(f"  Warning: Only {n_unique} unique data combinations found, adjusted n_clusters from {initial_n_clusters} to {n_clusters}")
+
+    # Validate n_clusters
+    original_n_clusters = n_clusters
+    n_clusters = min(n_clusters, n_unique)
+    n_clusters = max(n_clusters, 2)
+    if original_n_clusters != n_clusters:
+        print(f"  Warning: Adjusted n_clusters from {original_n_clusters} to {n_clusters} to ensure validity")
 
     return n_clusters, n_samples
 
@@ -229,6 +243,8 @@ def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, ran
     """
     dataset_name = info_item["name"]
     difficulty_map = info_item["difficulty_map"]
+    # Get n_cluster from info_item if present
+    n_cluster = info_item.get("n_cluster")
 
     # Load data
     csv_path = input_dir / f"{dataset_name}.csv"
@@ -237,7 +253,7 @@ def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, ran
     print(f"  Loaded {dataset_name} with {data_size} samples")
 
     # Calculate optimal parameters
-    n_clusters, n_samples = calculate_optimal_parameters(data, data_size, compression_ratio)
+    n_clusters, n_samples = calculate_optimal_parameters(data, data_size, compression_ratio, n_cluster)
     print(f"  Optimal parameters: n_clusters={n_clusters}, n_samples={n_samples}")
 
     # Prepare data

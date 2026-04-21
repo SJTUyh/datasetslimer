@@ -33,7 +33,7 @@ def generate_info(num_subsets, max_dimension, max_avg, num_score_types):
     return info
 
 
-def generate_csv_file(file_path, subset_info, case_range, score_types):
+def generate_csv_file(file_path, subset_info, case_range, score_types, binary_scores=False):
     # 如果 subset_info 中已经有 count，则使用它；否则随机生成
     if 'count' in subset_info and subset_info['count'] > 0:
         num_cases = subset_info['count']
@@ -54,7 +54,10 @@ def generate_csv_file(file_path, subset_info, case_range, score_types):
         difficulty = random.choice(difficulties)
 
         for i, score in enumerate(score_types):
-            row[score] = round(np.clip(random.normalvariate(avg_scores[i], 0.15), 0, 1), 2)
+            if binary_scores:
+                row[score] = 1 if random.random() < avg_scores[i] else 0
+            else:
+                row[score] = round(np.clip(random.normalvariate(avg_scores[i], 0.15), 0, 1), 2)
 
         row['difficulty'] = difficulty
         rows.append(row)
@@ -76,6 +79,7 @@ def main():
     parser.add_argument('--case_range', type=int, nargs=2, default=[100, 200], help='Case count range [min, max] (default: 100 200)')
     parser.add_argument('--score_types', type=str, nargs='+', default=['score0', 'score1', 'score2'], help='Score column names (default: score0 score1 score2)')
     parser.add_argument('--output_dir', type=str, default='./generated_data', help='Output directory (default: ./generated_data)')
+    parser.add_argument('--binary_scores', action='store_true', help='Generate binary scores (0 or 1) instead of continuous scores (0~1)')
 
     args = parser.parse_args()
 
@@ -99,7 +103,7 @@ def main():
                 if len(used_score_types) != num_scores:
                     print(f'Warning: score_types length ({len(used_score_types)}) does not match avg_scores length ({num_scores}) for {subset["name"]}')
                     used_score_types = [f'score{i}' for i in range(num_scores)]
-            num_cases = generate_csv_file(csv_path, subset, args.case_range, used_score_types)
+            num_cases = generate_csv_file(csv_path, subset, args.case_range, used_score_types, args.binary_scores)
             print(f'Generated {csv_path} with {num_cases} cases')
 
         output_info_path = os.path.join(args.output_dir, 'info.json')
@@ -112,7 +116,7 @@ def main():
 
         for subset in info:
             csv_path = os.path.join(args.output_dir, f'{subset["name"]}.csv')
-            num_cases = generate_csv_file(csv_path, subset, args.case_range, args.score_types)
+            num_cases = generate_csv_file(csv_path, subset, args.case_range, args.score_types, args.binary_scores)
             subset['count'] = num_cases
             print(f'Generated {csv_path} with {num_cases} cases')
 

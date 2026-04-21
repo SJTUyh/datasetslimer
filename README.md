@@ -38,6 +38,7 @@ datasetslimer/
 | `--case_range` | - | int[] | [100, 200] | 样本数量范围 [最小值, 最大值] |
 | `--score_types` | - | str[] | ['score0', 'score1', 'score2'] | 分数列名称 |
 | `--output_dir` | - | str | './generated_data' | 输出目录 |
+| `--binary_scores` | - | bool | False | 生成二值分数 (0 或 1) 而非连续分数 (0~1) |
 
 ### 使用示例
 
@@ -51,6 +52,12 @@ python generate_random_metadata.py --num_subsets 3 --case_range 100 200 --score_
 
 ```bash
 python generate_random_metadata.py --info_file info_sample.json --output_dir ./multi_data_sample
+```
+
+#### 生成二值分数（只有 0 或 1）
+
+```bash
+python generate_random_metadata.py --binary_scores --num_subsets 3 --case_range 100 200 --output_dir ./multi_data_sample_binary
 ```
 
 ### 输入输出详解
@@ -80,12 +87,20 @@ python generate_random_metadata.py --info_file info_sample.json --output_dir ./m
   - `score0`, `score1`, `score2`: 评分列（数值 0-1）
   - `difficulty`: 难度级别（如 level0, level1, level2）
 
-  样例数据:
+  连续分数样例数据:
   ```csv
   id,score0,score1,score2,difficulty
   eyoqdm,0.13,0.65,0.37,level0
   glzgurmuplzu,0.0,0.45,0.51,level0
   ngomuim,0.0,0.55,0.43,level2
+  ```
+
+  二值分数样例数据 (使用 --binary_scores 参数):
+  ```csv
+  id,score0,score1,score2,difficulty
+  eyoqdm,0,1,0,level0
+  glzgurmuplzu,0,0,1,level0
+  ngomuim,0,1,0,level2
   ```
 
 ---

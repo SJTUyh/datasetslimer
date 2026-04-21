@@ -1,0 +1,107 @@
+[
+    {
+        "dataset_name": "random_metadata0",
+        "sizes": {
+            "full": 160,
+            "representative": 16,
+            "random": 16
+        },
+        "means": {
+            "Full Dataset": {
+                "score0": 0.08706249999999999,
+                "score1": 0.4331875,
+                "score2": 0.33875
+            },
+            "K-means Representative": {
+                "score0": 0.08750000000000001,
+                "score1": 0.44937499999999997,
+                "score2": 0.32499999999999996
+            },
+            "Random": {
+                "score0": 0.06625,
+                "score1": 0.395625,
+                "score2": 0.32625000000000004
+            }
+        },
+        "correlations": {
+            "representative": {
+                "full": -0.011405766154722087,
+                "sample": -0.16093099863433472
+            },
+            "random": {
+                "full": -0.011405766154722087,
+                "sample": -0.0022869252378434485
+            }
+        }
+    },
+    {
+        "dataset_name": "random_metadata1",
+        "sizes": {
+            "full": 198,
+            "representative": 19,
+            "random": 19
+        },
+        "means": {
+            "Full Dataset": {
+                "score0": 0.12545454545454543,
+                "score1": 0.17843434343434342,
+                "score2": 0.2032828282828283
+            },
+            "K-means Representative": {
+                "score0": 0.14578947368421052,
+                "score1": 0.18842105263157896,
+                "score2": 0.25157894736842107
+            },
+            "Random": {
+                "score0": 0.10210526315789474,
+                "score1": 0.1557894736842105,
+                "score2": 0.2031578947368421
+            }
+        },
+        "correlations": {
+            "representative": {
+                "full": -0.01567718036932137,
+                "sample": -0.07566026333070111
+            },
+            "random": {
+                "full": -0.01567718036932137,
+                "sample": 0.026705639275079417
+            }
+        }
+    },
+    {
+        "dataset_name": "random_metadata2",
+        "sizes": {
+            "full": 170,
+            "representative": 17,
+            "random": 17
+        },
+        "means": {
+            "Full Dataset": {
+                "score0": 0.2687058823529412,
+                "score1": 0.48023529411764704,
+                "score2": 0.4671764705882353
+            },
+            "K-means Representative": {
+                "score0": 0.25411764705882356,
+                "score1": 0.47705882352941176,
+                "score2": 0.4629411764705883
+            },
+            "Random": {
+                "score0": 0.2658823529411765,
+                "score1": 0.46764705882352936,
+                "score2": 0.48
+            }
+        },
+        "correlations": {
+            "representative": {
+                "full": 0.009149105233163585,
+                "sample": 0.016161804719304108
+            },
+            "random": {
+                "full": 0.009149105233163585,
+                "sample": -0.05200540267189601
+            }
+        }
+    }
+]

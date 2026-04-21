@@ -1,0 +1,43 @@
+[
+    {
+        "name": "random_metadata0",
+        "count": 160,
+        "avg_scores": [
+            0.05,
+            0.44,
+            0.35
+        ],
+        "difficulty_map": {
+            "level0": 0,
+            "level1": 1,
+            "level2": 2
+        }
+    },
+    {
+        "name": "random_metadata1",
+        "count": 198,
+        "avg_scores": [
+            0.11,
+            0.17,
+            0.2
+        ],
+        "difficulty_map": {
+            "level0": 0,
+            "level1": 1,
+            "level2": 2
+        }
+    },
+    {
+        "name": "random_metadata2",
+        "count": 170,
+        "avg_scores": [
+            0.26,
+            0.49,
+            0.47
+        ],
+        "difficulty_map": {
+            "level0": 0,
+            "level1": 1
+        }
+    }
+]

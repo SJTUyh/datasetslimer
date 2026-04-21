@@ -33,7 +33,7 @@ def prepare_data(data: pd.DataFrame, difficulty_map: dict = None) -> pd.DataFram
 
     return data_numeric
 
-def compute_kmeans(data: pd.DataFrame, n_clusters: int, random_state: int = 42) -> tuple[np.ndarray, np.ndarray]:
+def compute_kmeans(data: pd.DataFrame, n_clusters: int, random_state: int = 42) -> tuple:
     """
     Compute k-means clustering on the given data.
 
@@ -177,7 +177,7 @@ def save_sample_and_ids(sample: pd.DataFrame, name: str, data_dir: Path) -> None
     with open(data_dir / f"{name}_ids.json", 'w') as f:
         json.dump(sample["id"].tolist(), f)
 
-def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression_ratio: float = 0.1) -> tuple[int, int]:
+def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression_ratio: float = 0.1) -> tuple:
     """
     Calculate optimal n_clusters and n_samples based on data size and compression ratio.
     Also ensures n_clusters doesn't exceed the number of unique data combinations.
@@ -212,7 +212,7 @@ def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression
 
     return n_clusters, n_samples
 
-def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, random_dir: Path, compression_ratio: float, random_state: int = 42) -> tuple[dict, dict]:
+def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, random_dir: Path, compression_ratio: float, random_state: int = 42) -> tuple:
     """
     Process a single dataset from the info.json.
 

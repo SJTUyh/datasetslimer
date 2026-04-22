@@ -1,10 +1,12 @@
 # datasetslimer 工具
 
-一个用于生成、压缩和对比数据集的工具包，包含三个主要脚本：
+一个用于生成、压缩和对比数据集的工具包，包含以下主要脚本：
 
 - `generate_random_metadata.py` - 生成随机元数据
 - `generate_subsets.py` - 使用 K-means 聚类生成代表性数据集子集
 - `compare_subsets.py` - 对比原始数据集与压缩子集
+- `create_test_data.py` - 为 construct_from_real_ds.py 生成测试数据
+- `construct_from_real_ds.py` - 从多轮真实测试结果构造 metadata
 
 ## 目录结构
 
@@ -13,6 +15,8 @@ datasetslimer/
 ├── generate_random_metadata.py    # 生成随机元数据
 ├── generate_subsets.py            # 生成数据集子集
 ├── compare_subsets.py             # 对比数据集子集
+├── create_test_data.py            # 生成测试数据
+├── construct_from_real_ds.py      # 从真实测试结果构造 metadata
 ├── info_sample.json               # 样例信息文件
 ├── multi_data_sample/             # 样例原始数据
 ├── multi_data_sample_compressed/  # 样例压缩数据
@@ -218,6 +222,8 @@ python compare_subsets.py -o ./multi_data_sample -c ./multi_data_sample_compress
 
 ## 完整工作流示例
 
+### 工作流 1：随机生成数据集流程
+
 1. **生成随机数据集**
    ```bash
    python generate_random_metadata.py --num_subsets 3 --output_dir ./my_data
@@ -232,6 +238,23 @@ python compare_subsets.py -o ./multi_data_sample -c ./multi_data_sample_compress
    ```bash
    python compare_subsets.py -o ./my_data -c ./my_data_compressed -f ./my_comparison
    ```
+
+### 工作流 2：从真实测试结果构造 metadata 流程
+
+1. **生成测试数据（如已有真实测试数据可跳过此步）**
+   ```bash
+   python create_test_data.py
+   ```
+
+2. **从测试结果构造 metadata**
+   ```bash
+   python construct_from_real_ds.py --input test_real_results --output test_output_metadata
+   ```
+
+3. **检查生成的输出文件**
+   - `test_output_metadata/info.json`
+   - `test_output_metadata/subset_0.csv`
+   - `test_output_metadata/subset_1.csv`
 
 ## 依赖库
 

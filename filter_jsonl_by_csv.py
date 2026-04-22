@@ -50,6 +50,8 @@ def filter_jsonl_by_csv(compressed_dir: str, raw_data_dir: str, output_dir: str)
             print(f"  No ids found in {csv_path.name}")
             continue
 
+        print(f"{ids_set=}")
+
         print(f"  Found {len(ids_set)} unique ids")
 
         # Find corresponding jsonl file in raw data directory

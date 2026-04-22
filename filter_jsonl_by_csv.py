@@ -44,13 +44,11 @@ def filter_jsonl_by_csv(compressed_dir: str, raw_data_dir: str, output_dir: str)
             reader = csv.DictReader(f)
             for row in reader:
                 if "id" in row:
-                    ids_set.add(row["id"])
+                    ids_set.add(int(row["id"]))
 
         if not ids_set:
             print(f"  No ids found in {csv_path.name}")
             continue
-
-        print(f"{ids_set=}")
 
         print(f"  Found {len(ids_set)} unique ids")
 

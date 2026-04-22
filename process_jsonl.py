@@ -42,14 +42,13 @@ def process_jsonl_files(input_dir: str, output_dir: str, default_difficulty: str
                 try:
                     data = json.loads(line)
 
-                    # Extract required fields
-                    question_id = data.get("questionId")
+                    # Extract required fields from payload
+                    payload = data.get("payload", {})
+                    question_id = payload.get("_internal_question_id_raw_")
                     if question_id is None:
-                        print(f"  Warning: Line {line_num} missing 'questionId' field, skipping")
+                        print(f"  Warning: Line {line_num} missing '_internal_question_id_raw_' in payload, skipping")
                         continue
 
-                    # Extract avg_score from payload
-                    payload = data.get("payload", {})
                     avg_score = payload.get("avg_score")
                     if avg_score is None:
                         print(f"  Warning: Line {line_num} missing 'avg_score' in payload, skipping")

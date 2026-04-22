@@ -1,0 +1,43 @@
+[
+    {
+        "name": "random_metadata0",
+        "count": 16,
+        "avg_scores": [
+            0.06625,
+            0.395625,
+            0.32625000000000004
+        ],
+        "difficulty_map": {
+            "level0": 0,
+            "level1": 1,
+            "level2": 2
+        }
+    },
+    {
+        "name": "random_metadata1",
+        "count": 19,
+        "avg_scores": [
+            0.10210526315789474,
+            0.1557894736842105,
+            0.2031578947368421
+        ],
+        "difficulty_map": {
+            "level0": 0,
+            "level1": 1,
+            "level2": 2
+        }
+    },
+    {
+        "name": "random_metadata2",
+        "count": 17,
+        "avg_scores": [
+            0.2658823529411765,
+            0.46764705882352936,
+            0.48
+        ],
+        "difficulty_map": {
+            "level0": 0,
+            "level1": 1
+        }
+    }
+]

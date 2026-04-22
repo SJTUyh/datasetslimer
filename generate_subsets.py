@@ -177,17 +177,108 @@ def save_sample_and_ids(sample: pd.DataFrame, name: str, data_dir: Path) -> None
     with open(data_dir / f"{name}_ids.json", 'w') as f:
         json.dump(sample["id"].tolist(), f)
 
-def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression_ratio: float = 0.1, n_cluster: int = None) -> tuple:
+def evaluate_n_cluster(data: pd.DataFrame, n_clusters: int, n_samples: int,
+                      original_avg_scores: np.ndarray, score_cols: list,
+                      difficulty_map: dict, random_state: int) -> float:
+    """
+    Evaluate a specific n_clusters value by generating a sample and calculating score deviation.
+
+    Parameters:
+    - data: Full dataset
+    - n_clusters: Number of clusters to use
+    - n_samples: Target number of samples
+    - original_avg_scores: Original average scores
+    - score_cols: List of score column names
+    - difficulty_map: Difficulty mapping
+    - random_state: Random seed
+
+    Returns:
+    - Sum of absolute differences between sample scores and original scores
+    """
+    data_numeric = prepare_data(data, difficulty_map)
+    labels, _ = compute_kmeans(data_numeric, n_clusters, random_state)
+    sample = draw_representative_sample(data, labels, n_samples, random_state, difficulty_map)
+    sample_avg_scores = sample[score_cols].mean().tolist()
+    return np.sum(np.abs(np.array(sample_avg_scores) - original_avg_scores))
+
+
+def find_optimal_n_cluster(data: pd.DataFrame, n_samples: int,
+                          original_avg_scores: np.ndarray, score_cols: list,
+                          difficulty_map: dict, random_state: int,
+                          n_unique: int) -> int:
+    """
+    Find optimal n_cluster by evaluating multiple values and choosing the one with closest average scores.
+
+    Parameters:
+    - data: Full dataset
+    - n_samples: Target number of samples
+    - original_avg_scores: Original average scores
+    - score_cols: List of score column names
+    - difficulty_map: Difficulty mapping
+    - random_state: Random seed
+    - n_unique: Number of unique data combinations
+
+    Returns:
+    - Optimal n_clusters
+    """
+    # Define search space for n_clusters
+    min_clusters = max(2, min(5, n_samples))
+    max_clusters = min(min(100, n_unique), n_samples)
+
+    # Generate candidate values
+    if max_clusters - min_clusters <= 10:
+        candidates = list(range(min_clusters, max_clusters + 1))
+    else:
+        # Use logarithmic spacing to cover a wide range
+        candidates = []
+        # Add square root value
+        sqrt_val = int(np.sqrt(n_samples))
+        candidates.append(max(min_clusters, min(sqrt_val, max_clusters)))
+        # Add linear steps
+        step = max(1, (max_clusters - min_clusters) // 10)
+        candidates.extend(range(min_clusters, max_clusters + 1, step))
+        # Ensure unique and sorted
+        candidates = sorted(list(set(candidates)))
+
+    # Evaluate all candidates
+    best_score = float('inf')
+    best_n_clusters = min_clusters
+
+    print(f"  Searching optimal n_cluster in range [{min_clusters}, {max_clusters}] (candidates: {candidates})")
+
+    for n_clusters in candidates:
+        deviation = evaluate_n_cluster(data, n_clusters, n_samples, original_avg_scores,
+                                     score_cols, difficulty_map, random_state)
+        print(f"    n_cluster={n_clusters}, deviation={deviation:.6f}")
+
+        if deviation < best_score:
+            best_score = deviation
+            best_n_clusters = n_clusters
+
+    print(f"  Best n_cluster={best_n_clusters} with deviation={best_score:.6f}")
+    return best_n_clusters
+
+
+def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression_ratio: float = 0.1,
+                                 n_cluster: int = None, auto_optimize: bool = False,
+                                 original_avg_scores: np.ndarray = None, score_cols: list = None,
+                                 difficulty_map: dict = None, random_state: int = 42) -> tuple:
     """
     Calculate optimal n_clusters and n_samples based on data size and compression ratio.
     Also ensures n_clusters doesn't exceed the number of unique data combinations.
     If n_cluster is provided, use that value (with validation).
+    If auto_optimize is True, search for optimal n_cluster by evaluating average score similarity.
 
     Parameters:
     - data: DataFrame to check for unique data combinations
     - data_size: Total number of samples in dataset
     - compression_ratio: Target compression ratio (0-1)
     - n_cluster: Optional predefined number of clusters
+    - auto_optimize: Whether to automatically find optimal n_cluster
+    - original_avg_scores: Original average scores (for auto-optimization)
+    - score_cols: List of score column names (for auto-optimization)
+    - difficulty_map: Difficulty mapping (for auto-optimization)
+    - random_state: Random seed (for auto-optimization)
 
     Returns:
     - Tuple of (n_clusters, n_samples)
@@ -206,6 +297,9 @@ def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression
     if n_cluster is not None:
         n_clusters = n_cluster
         print(f"  Using n_cluster={n_clusters} from info.json")
+    elif auto_optimize and original_avg_scores is not None and score_cols is not None and difficulty_map is not None:
+        n_clusters = find_optimal_n_cluster(data, n_samples, original_avg_scores, score_cols,
+                                          difficulty_map, random_state, n_unique)
     else:
         # Calculate initial n_clusters
         initial_n_clusters = min(int(np.sqrt(n_samples)), n_samples)
@@ -226,7 +320,7 @@ def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression
 
     return n_clusters, n_samples
 
-def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, random_dir: Path, compression_ratio: float, random_state: int = 42) -> tuple:
+def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, random_dir: Path, compression_ratio: float, auto_optimize: bool = False, random_state: int = 42) -> tuple:
     """
     Process a single dataset from the info.json.
 
@@ -236,6 +330,7 @@ def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, ran
     - repr_dir: Directory to save representative samples
     - random_dir: Directory to save random samples
     - compression_ratio: Target compression ratio
+    - auto_optimize: Whether to automatically find optimal n_cluster
     - random_state: Random seed
 
     Returns:
@@ -252,8 +347,17 @@ def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, ran
     data_size = len(data)
     print(f"  Loaded {dataset_name} with {data_size} samples")
 
+    # Calculate original average scores
+    score_cols = [col for col in data.columns if col.startswith("score")]
+    original_avg_scores = np.array(data[score_cols].mean().tolist())
+    print(f"  Original average scores: {original_avg_scores}")
+
     # Calculate optimal parameters
-    n_clusters, n_samples = calculate_optimal_parameters(data, data_size, compression_ratio, n_cluster)
+    n_clusters, n_samples = calculate_optimal_parameters(
+        data, data_size, compression_ratio, n_cluster,
+        auto_optimize=auto_optimize, original_avg_scores=original_avg_scores,
+        score_cols=score_cols, difficulty_map=difficulty_map, random_state=random_state
+    )
     print(f"  Optimal parameters: n_clusters={n_clusters}, n_samples={n_samples}")
 
     # Prepare data
@@ -276,9 +380,6 @@ def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, ran
     # Save random sample
     save_sample_and_ids(random_sample, dataset_name, random_dir)
 
-    # Calculate avg_scores
-    score_cols = [col for col in data.columns if col.startswith("score")]
-
     # Create updated info items
     repr_info = {
         "name": dataset_name,
@@ -299,6 +400,7 @@ def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, ran
 def main(input_dir: str,
          output_dir: str,
          compression_ratio: float = 0.1,
+         auto_optimize: bool = False,
          random_state: int = 42) -> None:
     """
     Generate and save different samples from multiple datasets.
@@ -307,6 +409,7 @@ def main(input_dir: str,
     - input_dir: Directory containing info.json and metadata CSV files
     - output_dir: Directory to save output samples
     - compression_ratio: Target compression ratio (0-1)
+    - auto_optimize: Whether to automatically find optimal n_cluster
     - random_state: Random seed for reproducibility
     """
     input_path = Path(input_dir)
@@ -322,6 +425,8 @@ def main(input_dir: str,
         original_info = json.load(f)
 
     print(f"Loaded info.json with {len(original_info)} datasets")
+    if auto_optimize:
+        print("Auto-optimization mode enabled: searching for optimal n_cluster")
 
     # Process each dataset
     repr_info_list = []
@@ -330,7 +435,7 @@ def main(input_dir: str,
     for info_item in original_info:
         print(f"\nProcessing {info_item['name']}...")
         repr_info, rand_info = process_single_dataset(
-            info_item, input_path, repr_output_dir, random_output_dir, compression_ratio, random_state
+            info_item, input_path, repr_output_dir, random_output_dir, compression_ratio, auto_optimize, random_state
         )
         repr_info_list.append(repr_info)
         rand_info_list.append(rand_info)
@@ -355,6 +460,8 @@ if __name__ == "__main__":
                         help='Directory to save output samples')
     parser.add_argument('--compression-ratio', '-r', type=float, default=0.1,
                         help='Target compression ratio (0-1, default: 0.1)')
+    parser.add_argument('--auto-optimize', '-a', action='store_true',
+                        help='Enable automatic search for optimal n_cluster based on average scores similarity')
     parser.add_argument('--random-state', '-s', type=int, default=42,
                         help='Random seed for reproducibility (default: 42)')
 
@@ -364,5 +471,6 @@ if __name__ == "__main__":
         input_dir=args.input,
         output_dir=args.output,
         compression_ratio=args.compression_ratio,
+        auto_optimize=args.auto_optimize,
         random_state=args.random_state
     )

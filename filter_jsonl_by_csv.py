@@ -78,9 +78,8 @@ def filter_jsonl_by_csv(compressed_dir: str, raw_data_dir: str, output_dir: str)
 
                 try:
                     data = json.loads(line)
-                    # Check _internal_question_id_ in payload
-                    payload = data.get("payload", {})
-                    question_id = payload.get("_internal_question_id_")
+                    # Check _internal_question_id_ at top level
+                    question_id = data.get("_internal_question_id_")
                     if question_id and question_id in ids_set:
                         filtered_lines.append(line)
                 except json.JSONDecodeError as e:

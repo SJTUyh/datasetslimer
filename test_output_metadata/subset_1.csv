@@ -1,4 +1,4 @@
-id,score0,score1,score2,difficulty
+id,test_0,test_1,test_2,difficulty
 case_000,0.38,0.56,0.67,level1
 case_001,0.69,0.31,0.76,level2
 case_002,0.25,0.84,0.74,level0

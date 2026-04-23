@@ -145,7 +145,7 @@ def construct_metadata(input_dir: str, output_dir: str) -> None:
     # Step 9: Save info.json
     info_path = output_path / "info.json"
     with open(info_path, 'w', encoding='utf-8') as f:
-        json.dump(info_list, f, indent=4)
+        json.dump(info_list, f, indent=4, ensure_ascii=False)
     print(f"\nSaved info.json to {info_path}")
 
     print(f"\nConstruction complete!")

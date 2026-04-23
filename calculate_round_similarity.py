@@ -3,6 +3,11 @@ import json
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import rcParams
+
+# 设置字体以支持中文显示
+rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
+rcParams['axes.unicode_minus'] = False
 
 
 def calculate_column_similarity(df):
@@ -104,7 +109,7 @@ def main(input_dir: str, output_file: str = None):
 
     # 保存JSON结果
     with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(all_results, f, indent=4)
+        json.dump(all_results, f, indent=4, ensure_ascii=False)
 
     print(f"\nJSON结果已保存到: {output_path}")
 

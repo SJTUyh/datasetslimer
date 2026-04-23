@@ -121,19 +121,22 @@ def construct_metadata(input_dir: str, output_dir: str) -> None:
                 sorted_avg[3 * n // 4] if n > 0 else 0
             ]
 
-            # Assign difficulty levels
+            # Assign difficulty levels (as strings)
             for case_id, case_info in case_data.items():
                 if case_info["difficulty"] is None:
                     avg_score = case_info["avg_score"]
                     if avg_score < thresholds[0]:
-                        difficulty = 3
+                        difficulty = "3"
                     elif avg_score < thresholds[1]:
-                        difficulty = 2
+                        difficulty = "2"
                     elif avg_score < thresholds[2]:
-                        difficulty = 1
+                        difficulty = "1"
                     else:
-                        difficulty = 0
+                        difficulty = "0"
                     case_info["difficulty"] = difficulty
+                # 确保已有的 difficulty 也是字符串类型
+                elif not isinstance(case_info["difficulty"], str):
+                    case_info["difficulty"] = str(case_info["difficulty"])
 
         # Update difficulty map with all unique difficulty values
         for case_info in case_data.values():

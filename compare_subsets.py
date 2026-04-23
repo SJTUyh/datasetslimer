@@ -157,8 +157,8 @@ def process_single_dataset(dataset_name: str, original_dir: Path, repr_dir: Path
         representative_numeric = prepare_numeric_data(representative)
         random_numeric = prepare_numeric_data(random_sample)
 
-        # Compare means
-        means_df = compare_means_single(dataset_name, full_numeric, representative_numeric, random_numeric, figures_path)
+        # Compare means - use original data to find column positions
+        means_df = compare_means_single(dataset_name, full_data, representative, random_sample, figures_path)
 
         # Compare difficulty distributions
         samples = {

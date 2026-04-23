@@ -109,19 +109,22 @@ def construct_metadata(input_dir: str, output_dir: str) -> None:
             for case_id in case_data:
                 case_data[case_id]["scores"].append(id_to_score.get(case_id, 0.0))
 
-        # Step 5: Create DataFrame
+        # Step 5: Create DataFrame with averaged score
         df_data = []
         for case_id, case_info in case_data.items():
-            row = {"id": case_id, "difficulty": case_info["difficulty"]}
-            for i, score in enumerate(case_info["scores"]):
-                row[test_dir_names[i]] = score
+            # Calculate average score across all rounds
+            avg_score = sum(case_info["scores"]) / len(case_info["scores"])
+            row = {
+                "id": case_id,
+                "score": avg_score,
+                "difficulty": case_info["difficulty"]
+            }
             df_data.append(row)
 
         df = pd.DataFrame(df_data)
 
-        # Reorder columns: id first, then test directory names, then difficulty
-        score_cols = test_dir_names
-        cols = ["id"] + score_cols + ["difficulty"]
+        # Reorder columns
+        cols = ["id", "score", "difficulty"]
         df = df[cols]
 
         # Step 6: Save CSV file
@@ -130,8 +133,8 @@ def construct_metadata(input_dir: str, output_dir: str) -> None:
         df.to_csv(csv_path, index=False)
         print(f"  Saved to {csv_path} with {len(df)} cases")
 
-        # Step 7: Calculate avg_scores
-        avg_scores = df[score_cols].mean().tolist()
+        # Step 7: Calculate avg_scores (now just a single value)
+        avg_scores = [df["score"].mean()]
 
         # Step 8: Add to info list
         info_item = {

@@ -36,6 +36,25 @@ def prepare_data(data: pd.DataFrame, difficulty_map: dict = None) -> pd.DataFram
 
     return data_numeric
 
+
+def prepare_single_feature_data(data: pd.DataFrame, difficulty_map: dict = None) -> pd.DataFrame:
+    """
+    Prepare data by mapping difficulty and taking average of all features as single feature.
+
+    Parameters:
+    - data: Raw DataFrame with original columns
+    - difficulty_map: Custom mapping from difficulty strings to numeric values
+
+    Returns:
+    - DataFrame with single feature (average of all features)
+    """
+    data_numeric = prepare_data(data, difficulty_map)
+    # Take average of all features as single feature
+    single_feature = pd.DataFrame({
+        'avg_feature': data_numeric.mean(axis=1)
+    })
+    return single_feature
+
 def compute_kmeans(data: pd.DataFrame, n_clusters: int, random_state: int = 42) -> tuple:
     """
     Compute k-means clustering on the given data.
@@ -180,7 +199,7 @@ def draw_representative_sample(data: pd.DataFrame, labels: np.ndarray, n: int, r
         n_clusters = n
 
     # First, get the point closest to centroid for each cluster
-    data_numeric = prepare_data(data, difficulty_map)
+    data_single_feature = prepare_single_feature_data(data, difficulty_map)
     centroid_samples = pd.DataFrame()
     remaining_data = data.copy()
     remaining_indices = np.ones(len(data), dtype=bool)
@@ -188,16 +207,16 @@ def draw_representative_sample(data: pd.DataFrame, labels: np.ndarray, n: int, r
     kmeans = KMeans(n_clusters=n_clusters, random_state=random_state)
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', message='Number of distinct clusters.*found smaller than n_clusters.*')
-        kmeans.fit(data_numeric)
+        kmeans.fit(data_single_feature)
     centroids = kmeans.cluster_centers_
 
     # Select points closest to centroids
     for label, centroid in zip(unique_labels[:n_clusters], centroids):
         cluster_mask = labels == label
-        cluster_data_numeric = data_numeric[cluster_mask]
+        cluster_data_single = data_single_feature[cluster_mask]
 
-        # Calculate distances to centroid
-        distances = np.linalg.norm(cluster_data_numeric - centroid, axis=1)
+        # Calculate distances to centroid (single feature)
+        distances = np.linalg.norm(cluster_data_single - centroid, axis=1)
         closest_idx = np.argmin(distances)
 
         # Get the original index in the full dataset
@@ -298,8 +317,8 @@ def evaluate_n_cluster(data: pd.DataFrame, n_clusters: int, n_samples: int,
     Returns:
     - Sum of absolute differences between sample scores and original scores
     """
-    data_numeric = prepare_data(data, difficulty_map)
-    labels, _ = compute_kmeans(data_numeric, n_clusters, random_state)
+    data_single_feature = prepare_single_feature_data(data, difficulty_map)
+    labels, _ = compute_kmeans(data_single_feature, n_clusters, random_state)
     sample = draw_representative_sample(data, labels, n_samples, random_state, difficulty_map)
     sample_avg_scores = sample[score_cols].mean().tolist()
     return np.sum(np.abs(np.array(sample_avg_scores) - original_avg_scores))
@@ -463,16 +482,24 @@ def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, ran
     )
     print(f"  Optimal parameters: n_clusters={n_clusters}, n_samples={n_samples}")
 
-    # Prepare data
+    # Prepare data for clustering (single feature) and visualization (full features)
     data_numeric = prepare_data(data, difficulty_map)
+    data_single_feature = prepare_single_feature_data(data, difficulty_map)
 
     # Generate clusters
-    labels, centers = compute_kmeans(data_numeric, n_clusters, random_state)
+    labels, _ = compute_kmeans(data_single_feature, n_clusters, random_state)
 
-    # Visualize clustering
+    # Calculate full-feature centers for visualization
+    full_feature_centers = []
+    for cluster_label in range(n_clusters):
+        cluster_data = data_numeric[labels == cluster_label]
+        full_feature_centers.append(cluster_data.mean().values)
+    full_feature_centers = np.array(full_feature_centers)
+
+    # Visualize clustering using full features for better visualization
     if visualize:
         visualize_dir = repr_dir.parent / "clustering_visualizations"
-        visualize_clustering(data_numeric, labels, centers, visualize_dir, dataset_name)
+        visualize_clustering(data_numeric, labels, full_feature_centers, visualize_dir, dataset_name)
         print(f"  Clustering visualization saved to: {visualize_dir}")
 
     # Generate samples

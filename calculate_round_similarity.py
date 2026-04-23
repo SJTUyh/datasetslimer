@@ -3,11 +3,6 @@ import json
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import rcParams
-
-# 设置字体以支持中文显示
-rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
-rcParams['axes.unicode_minus'] = False
 
 
 def calculate_column_similarity(df):
@@ -67,9 +62,8 @@ def calculate_column_similarity(df):
 
 def plot_overall_similarities(subset_names, similarities_raw, similarities_corrected, cleaned_counts, output_path):
     """绘制综合相似性的柱状图"""
-    # 确保中文字体设置
-    plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
-    plt.rcParams['axes.unicode_minus'] = False
+    # 使用默认字体，避免中文显示问题
+    plt.rcParams.update(plt.rcParamsDefault)
 
     fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
@@ -77,8 +71,8 @@ def plot_overall_similarities(subset_names, similarities_raw, similarities_corre
     x = np.arange(len(subset_names))
     width = 0.35
 
-    bars1 = axes[0].bar(x - width/2, similarities_raw, width, label='原始相似度', color='skyblue', edgecolor='navy')
-    bars2 = axes[0].bar(x + width/2, similarities_corrected, width, label='修正后相似度', color='lightcoral', edgecolor='darkred')
+    bars1 = axes[0].bar(x - width/2, similarities_raw, width, label='Raw Similarity', color='skyblue', edgecolor='navy')
+    bars2 = axes[0].bar(x + width/2, similarities_corrected, width, label='Corrected Similarity', color='lightcoral', edgecolor='darkred')
 
     # 添加数值
     for bars in [bars1, bars2]:
@@ -88,9 +82,9 @@ def plot_overall_similarities(subset_names, similarities_raw, similarities_corre
                         f'{height:.4f}',
                         ha='center', va='bottom', fontsize=10)
 
-    axes[0].set_ylabel('相似度', fontsize=12)
-    axes[0].set_xlabel('子集名称', fontsize=12)
-    axes[0].set_title('原始相似度 vs 修正后相似度', fontsize=14, fontweight='bold')
+    axes[0].set_ylabel('Similarity', fontsize=12)
+    axes[0].set_xlabel('Subset Name', fontsize=12)
+    axes[0].set_title('Raw vs Corrected Similarity', fontsize=14, fontweight='bold')
     axes[0].set_xticks(x)
     axes[0].set_xticklabels(subset_names, rotation=45, ha='right')
     axes[0].legend()
@@ -98,8 +92,8 @@ def plot_overall_similarities(subset_names, similarities_raw, similarities_corre
 
     # 第二张图：修正后的相似度和数据量
     ax2 = axes[1].twinx()
-    bars3 = axes[1].bar(subset_names, similarities_corrected, color='lightcoral', edgecolor='darkred', label='修正后相似度', alpha=0.7)
-    line2 = ax2.plot(subset_names, cleaned_counts, 'o-', color='darkgreen', linewidth=2, markersize=8, label='有效数据量')
+    bars3 = axes[1].bar(subset_names, similarities_corrected, color='lightcoral', edgecolor='darkred', label='Corrected Similarity', alpha=0.7)
+    line2 = ax2.plot(subset_names, cleaned_counts, 'o-', color='darkgreen', linewidth=2, markersize=8, label='Valid Cases')
 
     # 添加数值
     for bar in bars3:
@@ -108,10 +102,10 @@ def plot_overall_similarities(subset_names, similarities_raw, similarities_corre
                     f'{height:.4f}',
                     ha='center', va='bottom', fontsize=10, color='darkred')
 
-    axes[1].set_ylabel('修正后相似度', fontsize=12, color='darkred')
-    ax2.set_ylabel('有效数据量', fontsize=12, color='darkgreen')
-    axes[1].set_xlabel('子集名称', fontsize=12)
-    axes[1].set_title('修正后相似度与数据量', fontsize=14, fontweight='bold')
+    axes[1].set_ylabel('Corrected Similarity', fontsize=12, color='darkred')
+    ax2.set_ylabel('Number of Valid Cases', fontsize=12, color='darkgreen')
+    axes[1].set_xlabel('Subset Name', fontsize=12)
+    axes[1].set_title('Corrected Similarity with Case Count', fontsize=14, fontweight='bold')
     axes[1].tick_params(axis='y', labelcolor='darkred')
     ax2.tick_params(axis='y', labelcolor='darkgreen')
     axes[1].set_xticks(range(len(subset_names)))

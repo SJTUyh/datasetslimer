@@ -153,42 +153,6 @@ def visualize_clustering(data: pd.DataFrame, labels: np.ndarray, centers: np.nda
                dpi=300, bbox_inches='tight')
     plt.close()
 
-    # 2. Pair plot for top features (if few features)
-    if n_features <= 6:
-        fig = plt.figure(figsize=(15, 15))
-        data_with_labels = data.copy()
-        data_with_labels['Cluster'] = labels.astype(str)
-
-        # Create pair plot manually
-        for i in range(n_features):
-            for j in range(n_features):
-                ax = plt.subplot2grid((n_features, n_features), (i, j))
-                if i == j:
-                    # Histogram
-                    for cluster in sorted(data_with_labels['Cluster'].unique()):
-                        cluster_data = data_with_labels[data_with_labels['Cluster'] == cluster]
-                        ax.hist(cluster_data[feature_names[i]], alpha=0.5,
-                               label=f'Cluster {cluster}', bins=10)
-                    ax.set_ylabel(feature_names[i])
-                else:
-                    # Scatter plot
-                    scatter = ax.scatter(data_with_labels[feature_names[j]],
-                                        data_with_labels[feature_names[i]],
-                                        c=labels, cmap='viridis', alpha=0.6, s=30)
-                    ax.set_xlabel(feature_names[j])
-                    ax.set_ylabel(feature_names[i])
-                if j == 0:
-                    ax.set_ylabel(feature_names[i], fontsize=10)
-                if i == n_features - 1:
-                    ax.set_xlabel(feature_names[j], fontsize=10)
-                ax.tick_params(labelsize=8)
-                ax.grid(True, alpha=0.2)
-
-        plt.suptitle(f'Feature Pair Plot - {dataset_name}', fontsize=16, fontweight='bold', y=1.02)
-        plt.tight_layout()
-        plt.savefig(save_path / f'{dataset_name}_feature_pair_plot.png', dpi=300, bbox_inches='tight')
-        plt.close()
-
 def draw_representative_sample(data: pd.DataFrame, labels: np.ndarray, n: int, random_state: int = 1, difficulty_map: dict = None) -> pd.DataFrame:
     """
     Draw N representative datapoints based on k-means clustering labels.

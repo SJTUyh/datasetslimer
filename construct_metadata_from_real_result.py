@@ -111,6 +111,23 @@ def construct_metadata(input_dir: str, output_dir: str) -> None:
             all_avg_scores.append(avg_score)
             case_info["avg_score"] = avg_score
 
+        # Check if we need to force virtual difficulty:
+        # 1. All difficulties are None, or
+        # 2. All difficulties are the same (e.g., all "unknown"), or
+        # 3. All difficulties are "unknown"
+        unique_difficulties = set()
+        all_unknown = True
+        for case_info in case_data.values():
+            diff = case_info["difficulty"]
+            unique_difficulties.add(diff)
+            if diff != "unknown":
+                all_unknown = False
+
+        force_virtual = (len(unique_difficulties) == 1) or all_unknown or (None in unique_difficulties and len(unique_difficulties) == 1)
+
+        if force_virtual:
+            print(f"  All difficulties are the same or 'unknown', forcing virtual difficulty assignment")
+
         # Determine difficulty thresholds for 4 levels (0-3, lower avg score = higher difficulty)
         if all_avg_scores:
             sorted_avg = sorted(all_avg_scores)
@@ -123,7 +140,7 @@ def construct_metadata(input_dir: str, output_dir: str) -> None:
 
             # Assign difficulty levels (as strings)
             for case_id, case_info in case_data.items():
-                if case_info["difficulty"] is None:
+                if case_info["difficulty"] is None or force_virtual:
                     avg_score = case_info["avg_score"]
                     if avg_score < thresholds[0]:
                         difficulty = "3"

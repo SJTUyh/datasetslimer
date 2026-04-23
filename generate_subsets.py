@@ -352,23 +352,66 @@ def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, ran
     original_avg_scores = np.array(data[score_cols].mean().tolist())
     print(f"  Original average scores: {original_avg_scores}")
 
+    # Check for all-zero rows (excluding id column)
+    non_id_cols = [col for col in data.columns if col != "id"]
+    zero_mask = (data[non_id_cols] == 0).all(axis=1)
+    zero_rows = data[zero_mask]
+    non_zero_rows = data[~zero_mask]
+    zero_ratio = len(zero_rows) / data_size if data_size > 0 else 0
+
+    has_zero_rows = zero_ratio >= 0.1
+    if has_zero_rows:
+        print(f"  Detected {len(zero_rows)} all-zero rows ({zero_ratio*100:.1f}%), separating them from processing")
+        # Adjust data for kmeans - use only non-zero rows
+        kmeans_data = non_zero_rows
+        kmeans_data_size = len(kmeans_data)
+        # Calculate how many samples to take from zero and non-zero groups
+        n_samples = max(int(data_size * compression_ratio), 10)
+        n_samples = min(n_samples, data_size)
+        # Allocate samples proportionally
+        n_zero_samples = int(n_samples * zero_ratio)
+        n_non_zero_samples = n_samples - n_zero_samples
+        n_zero_samples = max(n_zero_samples, min(len(zero_rows), 1))
+        n_non_zero_samples = max(n_non_zero_samples, min(len(non_zero_rows), 1))
+        # Recalculate total to make sure
+        n_samples = n_zero_samples + n_non_zero_samples
+        print(f"  Allocating {n_zero_samples} samples from zero rows, {n_non_zero_samples} from non-zero rows")
+    else:
+        kmeans_data = data
+        kmeans_data_size = data_size
+        n_samples = max(int(data_size * compression_ratio), 10)
+        n_samples = min(n_samples, data_size)
+        n_zero_samples = 0
+        n_non_zero_samples = n_samples
+
     # Calculate optimal parameters
-    n_clusters, n_samples = calculate_optimal_parameters(
-        data, data_size, compression_ratio, n_cluster,
+    n_clusters, _ = calculate_optimal_parameters(
+        kmeans_data, kmeans_data_size, compression_ratio, n_cluster,
         auto_optimize=auto_optimize, original_avg_scores=original_avg_scores,
         score_cols=score_cols, difficulty_map=difficulty_map, random_state=random_state
     )
     print(f"  Optimal parameters: n_clusters={n_clusters}, n_samples={n_samples}")
 
     # Prepare data
-    data_numeric = prepare_data(data, difficulty_map)
+    kmeans_data_numeric = prepare_data(kmeans_data, difficulty_map)
 
     # Generate clusters
-    labels, _ = compute_kmeans(data_numeric, n_clusters, random_state)
+    if len(kmeans_data) >= 2:
+        labels, _ = compute_kmeans(kmeans_data_numeric, n_clusters, random_state)
+        # Generate representative sample from non-zero rows
+        repr_non_zero_sample = draw_representative_sample(kmeans_data, labels, n_non_zero_samples, random_state, difficulty_map)
+    else:
+        repr_non_zero_sample = kmeans_data.head(n_non_zero_samples)
 
-    # Generate samples
-    representative_sample = draw_representative_sample(data, labels, n_samples, random_state, difficulty_map)
+    # Generate random sample from full data
     random_sample = get_random_sample(data, n_samples, random_state)
+
+    # Combine zero and non-zero samples for representative
+    if has_zero_rows and n_zero_samples > 0:
+        repr_zero_sample = get_random_sample(zero_rows, n_zero_samples, random_state)
+        representative_sample = pd.concat([repr_zero_sample, repr_non_zero_sample], ignore_index=True)
+    else:
+        representative_sample = repr_non_zero_sample
 
     # Create directories
     repr_dir.mkdir(exist_ok=True, parents=True)

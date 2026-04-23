@@ -40,7 +40,8 @@ def construct_metadata(input_dir: str, output_dir: str) -> None:
     # Step 1: Find all test directories (e.g., test_0, test_1, ...)
     test_dirs = sorted([d for d in input_path.iterdir() if d.is_dir()])
     num_rounds = len(test_dirs)
-    print(f"Found {num_rounds} test rounds: {[d.name for d in test_dirs]}")
+    test_dir_names = [d.name for d in test_dirs]
+    print(f"Found {num_rounds} test rounds: {test_dir_names}")
 
     if num_rounds == 0:
         print("Error: No test directories found!")
@@ -113,13 +114,13 @@ def construct_metadata(input_dir: str, output_dir: str) -> None:
         for case_id, case_info in case_data.items():
             row = {"id": case_id, "difficulty": case_info["difficulty"]}
             for i, score in enumerate(case_info["scores"]):
-                row[f"score{i}"] = score
+                row[test_dir_names[i]] = score
             df_data.append(row)
 
         df = pd.DataFrame(df_data)
 
-        # Reorder columns: id first, then score0, score1, ..., then difficulty
-        score_cols = [f"score{i}" for i in range(num_rounds)]
+        # Reorder columns: id first, then test directory names, then difficulty
+        score_cols = test_dir_names
         cols = ["id"] + score_cols + ["difficulty"]
         df = df[cols]
 

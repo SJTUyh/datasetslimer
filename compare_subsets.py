@@ -37,15 +37,18 @@ def compare_means_single(dataset_name: str, full_data: pd.DataFrame, representat
     """
     Compare means of different samples against full dataset for a single dataset.
     """
+    # Find score columns (between id and difficulty)
+    full_cols = full_data.columns.tolist()
+    id_idx = full_cols.index('id')
+    difficulty_idx = full_cols.index('difficulty')
+    score_cols = full_cols[id_idx + 1:difficulty_idx]
+
     # Calculate means
     means_df = pd.DataFrame({
         "Full Dataset": full_data.mean(numeric_only=True),
         "K-means Representative": representative.mean(numeric_only=True),
         "Random": random.mean(numeric_only=True)
     })
-
-    # Check what metrics we have
-    score_cols = [col for col in means_df.index if col.startswith('score')]
 
     # Plot
     fig, ax = plt.subplots(figsize=(12, 6))

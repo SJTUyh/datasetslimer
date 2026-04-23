@@ -385,7 +385,8 @@ def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, ran
         "name": dataset_name,
         "count": len(representative_sample),
         "avg_scores": representative_sample[score_cols].mean().tolist(),
-        "difficulty_map": difficulty_map
+        "difficulty_map": difficulty_map,
+        "n_cluster": n_clusters
     }
 
     rand_info = {
@@ -442,11 +443,11 @@ def main(input_dir: str,
 
     # Save info.json for representative samples
     with open(repr_output_dir / "info.json", 'w', encoding='utf-8') as f:
-        json.dump(repr_info_list, f, indent=4)
+        json.dump(repr_info_list, f, indent=4, ensure_ascii=False)
 
     # Save info.json for random samples
     with open(random_output_dir / "info.json", 'w', encoding='utf-8') as f:
-        json.dump(rand_info_list, f, indent=4)
+        json.dump(rand_info_list, f, indent=4, ensure_ascii=False)
 
     print(f"\nCompression complete!")
     print(f"  - Representative samples saved to: {repr_output_dir}")

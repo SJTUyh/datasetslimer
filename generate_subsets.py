@@ -4,8 +4,11 @@ import argparse
 import pandas as pd
 import numpy as np
 import warnings
+import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn.utils import resample
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 def prepare_data(data: pd.DataFrame, difficulty_map: dict = None) -> pd.DataFrame:
     """
@@ -49,6 +52,142 @@ def compute_kmeans(data: pd.DataFrame, n_clusters: int, random_state: int = 42) 
         warnings.filterwarnings('ignore', message='Number of distinct clusters.*found smaller than n_clusters.*')
         kmeans.fit(data)
     return kmeans.labels_, kmeans.cluster_centers_
+
+
+def visualize_clustering(data: pd.DataFrame, labels: np.ndarray, centers: np.ndarray,
+                        save_path: Path, dataset_name: str) -> None:
+    """
+    Visualize clustering results using multiple complementary methods.
+
+    Parameters:
+    - data: Original numeric DataFrame
+    - labels: Cluster labels for each data point
+    - centers: Cluster centers
+    - save_path: Directory to save figures
+    - dataset_name: Name of the dataset for figure naming
+    """
+    save_path.mkdir(exist_ok=True, parents=True)
+
+    # Standardize data for PCA
+    scaler = StandardScaler()
+    data_scaled = scaler.fit_transform(data)
+
+    # 1. PCA 2D visualization
+    fig = plt.figure(figsize=(18, 12))
+    gs = fig.add_gridspec(2, 2, hspace=0.3, wspace=0.25)
+
+    # Plot 1: PCA scatter plot
+    ax1 = fig.add_subplot(gs[0, 0])
+    pca = PCA(n_components=2, random_state=42)
+    data_pca = pca.fit_transform(data_scaled)
+    centers_pca = pca.transform(scaler.transform(centers))
+
+    scatter = ax1.scatter(data_pca[:, 0], data_pca[:, 1], c=labels, cmap='viridis',
+                         alpha=0.6, s=50, edgecolors='k', linewidths=0.5)
+    ax1.scatter(centers_pca[:, 0], centers_pca[:, 1], c='red', marker='X', s=200,
+               linewidths=2, label='Centroids')
+    ax1.set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0]:.2%} variance)')
+    ax1.set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1]:.2%} variance)')
+    ax1.set_title('PCA Visualization of Clusters', fontweight='bold')
+    ax1.legend()
+    plt.colorbar(scatter, ax=ax1, label='Cluster')
+    ax1.grid(True, alpha=0.3)
+
+    # Plot 2: Box plots of features by cluster
+    ax2 = fig.add_subplot(gs[0, 1])
+    data_with_labels = data.copy()
+    data_with_labels['Cluster'] = labels
+
+    feature_names = data.columns.tolist()
+    n_features = len(feature_names)
+    n_clusters = len(np.unique(labels))
+
+    # Plot box plots for first few features (or all if small)
+    max_features = min(4, n_features)
+    box_width = 0.8 / max_features
+
+    for feat_idx in range(max_features):
+        feat_name = feature_names[feat_idx]
+        box_data = []
+        for cluster in range(n_clusters):
+            cluster_data = data_with_labels[data_with_labels['Cluster'] == cluster][feat_name]
+            box_data.append(cluster_data.values)
+
+        positions = np.arange(n_clusters) + feat_idx * box_width - (max_features - 1) * box_width / 2
+        bp = ax2.boxplot(box_data, positions=positions, widths=box_width * 0.8,
+                        patch_artist=True, labels=[f'C{i}' for i in range(n_clusters)])
+
+        # Color each feature differently
+        for patch in bp['boxes']:
+            patch.set_alpha(0.7)
+
+    ax2.set_xticks(np.arange(n_clusters))
+    ax2.set_xticklabels([f'Cluster {i}' for i in range(n_clusters)])
+    ax2.set_ylabel('Feature Value')
+    ax2.set_title(f'Feature Distributions by Cluster (Top {max_features})', fontweight='bold')
+    ax2.legend([plt.Rectangle((0, 0), 1, 1, fc=f'C{i}') for i in range(max_features)],
+              feature_names[:max_features], loc='upper right')
+    ax2.grid(True, alpha=0.3, axis='y')
+
+    # Plot 3: Radar chart of cluster centers
+    ax3 = fig.add_subplot(gs[1, :], projection='polar')
+    angles = np.linspace(0, 2 * np.pi, n_features, endpoint=False).tolist()
+    angles += angles[:1]  # Close the circle
+
+    # Scale centers for better visualization
+    centers_scaled = scaler.transform(centers)
+
+    for i in range(n_clusters):
+        values = centers_scaled[i].tolist()
+        values += values[:1]
+        ax3.plot(angles, values, 'o-', linewidth=2, label=f'Cluster {i}')
+        ax3.fill(angles, values, alpha=0.25)
+
+    ax3.set_xticks(angles[:-1])
+    ax3.set_xticklabels(feature_names, fontsize=8)
+    ax3.set_title('Cluster Centers (Scaled)', fontweight='bold', y=1.1)
+    ax3.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
+    ax3.grid(True)
+
+    plt.savefig(save_path / f'{dataset_name}_clustering_visualization.png',
+               dpi=300, bbox_inches='tight')
+    plt.close()
+
+    # 2. Pair plot for top features (if few features)
+    if n_features <= 6:
+        fig = plt.figure(figsize=(15, 15))
+        data_with_labels = data.copy()
+        data_with_labels['Cluster'] = labels.astype(str)
+
+        # Create pair plot manually
+        for i in range(n_features):
+            for j in range(n_features):
+                ax = plt.subplot2grid((n_features, n_features), (i, j))
+                if i == j:
+                    # Histogram
+                    for cluster in sorted(data_with_labels['Cluster'].unique()):
+                        cluster_data = data_with_labels[data_with_labels['Cluster'] == cluster]
+                        ax.hist(cluster_data[feature_names[i]], alpha=0.5,
+                               label=f'Cluster {cluster}', bins=10)
+                    ax.set_ylabel(feature_names[i])
+                else:
+                    # Scatter plot
+                    scatter = ax.scatter(data_with_labels[feature_names[j]],
+                                        data_with_labels[feature_names[i]],
+                                        c=labels, cmap='viridis', alpha=0.6, s=30)
+                    ax.set_xlabel(feature_names[j])
+                    ax.set_ylabel(feature_names[i])
+                if j == 0:
+                    ax.set_ylabel(feature_names[i], fontsize=10)
+                if i == n_features - 1:
+                    ax.set_xlabel(feature_names[j], fontsize=10)
+                ax.tick_params(labelsize=8)
+                ax.grid(True, alpha=0.2)
+
+        plt.suptitle(f'Feature Pair Plot - {dataset_name}', fontsize=16, fontweight='bold', y=1.02)
+        plt.tight_layout()
+        plt.savefig(save_path / f'{dataset_name}_feature_pair_plot.png', dpi=300, bbox_inches='tight')
+        plt.close()
 
 def draw_representative_sample(data: pd.DataFrame, labels: np.ndarray, n: int, random_state: int = 1, difficulty_map: dict = None) -> pd.DataFrame:
     """
@@ -320,7 +459,7 @@ def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression
 
     return n_clusters, n_samples
 
-def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, random_dir: Path, compression_ratio: float, auto_optimize: bool = False, random_state: int = 42) -> tuple:
+def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, random_dir: Path, compression_ratio: float, auto_optimize: bool = False, random_state: int = 42, visualize: bool = True) -> tuple:
     """
     Process a single dataset from the info.json.
 
@@ -364,7 +503,13 @@ def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, ran
     data_numeric = prepare_data(data, difficulty_map)
 
     # Generate clusters
-    labels, _ = compute_kmeans(data_numeric, n_clusters, random_state)
+    labels, centers = compute_kmeans(data_numeric, n_clusters, random_state)
+
+    # Visualize clustering
+    if visualize:
+        visualize_dir = repr_dir.parent / "clustering_visualizations"
+        visualize_clustering(data_numeric, labels, centers, visualize_dir, dataset_name)
+        print(f"  Clustering visualization saved to: {visualize_dir}")
 
     # Generate samples
     representative_sample = draw_representative_sample(data, labels, n_samples, random_state, difficulty_map)
@@ -402,7 +547,8 @@ def main(input_dir: str,
          output_dir: str,
          compression_ratio: float = 0.1,
          auto_optimize: bool = False,
-         random_state: int = 42) -> None:
+         random_state: int = 42,
+         visualize: bool = True) -> None:
     """
     Generate and save different samples from multiple datasets.
 
@@ -436,7 +582,7 @@ def main(input_dir: str,
     for info_item in original_info:
         print(f"\nProcessing {info_item['name']}...")
         repr_info, rand_info = process_single_dataset(
-            info_item, input_path, repr_output_dir, random_output_dir, compression_ratio, auto_optimize, random_state
+            info_item, input_path, repr_output_dir, random_output_dir, compression_ratio, auto_optimize, random_state, visualize
         )
         repr_info_list.append(repr_info)
         rand_info_list.append(rand_info)
@@ -465,6 +611,8 @@ if __name__ == "__main__":
                         help='Enable automatic search for optimal n_cluster based on average scores similarity')
     parser.add_argument('--random-state', '-s', type=int, default=42,
                         help='Random seed for reproducibility (default: 42)')
+    parser.add_argument('--no-visualize', '-n', action='store_true',
+                        help='Disable clustering visualization')
 
     args = parser.parse_args()
 
@@ -473,5 +621,6 @@ if __name__ == "__main__":
         output_dir=args.output,
         compression_ratio=args.compression_ratio,
         auto_optimize=args.auto_optimize,
-        random_state=args.random_state
+        random_state=args.random_state,
+        visualize=not args.no_visualize
     )

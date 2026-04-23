@@ -89,17 +89,12 @@ def construct_metadata(input_dir: str, output_dir: str) -> None:
         for round_data in all_rounds_data:
             for case in round_data:
                 case_id = case["id"]
-                difficulty = case["difficulty"]
                 if case_id not in case_data:
                     case_data[case_id] = {
                         "id": case_id,
-                        "difficulty": difficulty,
+                        "difficulty": case.get("difficulty"),
                         "scores": []
                     }
-                # Update difficulty map
-                if difficulty not in difficulty_map:
-                    # Assign numeric value based on existing map size
-                    difficulty_map[difficulty] = len(difficulty_map)
 
         # Second pass: fill in scores from each round
         for round_data in all_rounds_data:
@@ -108,6 +103,43 @@ def construct_metadata(input_dir: str, output_dir: str) -> None:
             # Fill in scores for each case
             for case_id in case_data:
                 case_data[case_id]["scores"].append(id_to_score.get(case_id, 0.0))
+
+        # Calculate average scores for each case and assign difficulty if missing
+        all_avg_scores = []
+        for case_id, case_info in case_data.items():
+            avg_score = sum(case_info["scores"]) / len(case_info["scores"])
+            all_avg_scores.append(avg_score)
+            case_info["avg_score"] = avg_score
+
+        # Determine difficulty thresholds for 4 levels (0-3, lower avg score = higher difficulty)
+        if all_avg_scores:
+            sorted_avg = sorted(all_avg_scores)
+            n = len(sorted_avg)
+            thresholds = [
+                sorted_avg[n // 4] if n > 0 else 0,
+                sorted_avg[n // 2] if n > 0 else 0,
+                sorted_avg[3 * n // 4] if n > 0 else 0
+            ]
+
+            # Assign difficulty levels
+            for case_id, case_info in case_data.items():
+                if case_info["difficulty"] is None:
+                    avg_score = case_info["avg_score"]
+                    if avg_score < thresholds[0]:
+                        difficulty = 3
+                    elif avg_score < thresholds[1]:
+                        difficulty = 2
+                    elif avg_score < thresholds[2]:
+                        difficulty = 1
+                    else:
+                        difficulty = 0
+                    case_info["difficulty"] = difficulty
+
+        # Update difficulty map with all unique difficulty values
+        for case_info in case_data.values():
+            difficulty = case_info["difficulty"]
+            if difficulty not in difficulty_map:
+                difficulty_map[difficulty] = len(difficulty_map)
 
         # Step 5: Create DataFrame
         df_data = []

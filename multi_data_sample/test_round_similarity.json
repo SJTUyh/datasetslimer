@@ -17,7 +17,11 @@
                 "score2": 1.0
             }
         },
-        "overall_similarity": -0.06114670511086064
+        "raw_similarity": -0.06114670511086064,
+        "corrected_similarity": -0.06114670511086064,
+        "original_count": 160,
+        "cleaned_count": 160,
+        "removed_count": 0
     },
     "random_metadata1": {
         "similarity_matrix": {
@@ -37,7 +41,11 @@
                 "score2": 1.0
             }
         },
-        "overall_similarity": -0.008359193402674919
+        "raw_similarity": -0.008359193402674919,
+        "corrected_similarity": -0.008359193402674919,
+        "original_count": 198,
+        "cleaned_count": 198,
+        "removed_count": 0
     },
     "random_metadata2": {
         "similarity_matrix": {
@@ -57,6 +65,10 @@
                 "score2": 1.0
             }
         },
-        "overall_similarity": 0.03596860656062001
+        "raw_similarity": 0.03596860656062001,
+        "corrected_similarity": 0.03596860656062001,
+        "original_count": 170,
+        "cleaned_count": 170,
+        "removed_count": 0
     }
 }

@@ -1,0 +1,19 @@
+{
+    "dynamic_degree": [
+        0.47619047619047616,
+        [
+            {
+                "video_path": "./vbench_videos/pika_1_cla/human_action/A person is riding a bike-0.mp4",
+                "video_results": 0.8
+            },
+            {
+                "video_path": "./vbench_videos/pika_1_cla/human_action/A person is riding a bike-1.mp4",
+                "video_results": 0.9
+            },
+            {
+                "video_path": "./vbench_videos/pika_1_cla/human_action/A person is marching-0.mp4",
+                "video_results": 0.7
+            }
+        ]
+    ]
+}

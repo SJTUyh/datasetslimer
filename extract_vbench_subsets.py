@@ -86,6 +86,8 @@ def extract_subsets(compress_dir, output_dir):
                 for selected_id in selected_ids:
                     if selected_id in id_to_prompt:
                         selected_prompts.append(id_to_prompt[selected_id])
+                    else:
+                        print(f"  Warning: ID {selected_id} not found in CSV file")
 
                 # 保存子集到新文件
                 output_file = os.path.join(subset_dir, f"{subset_name}.txt")
@@ -102,6 +104,9 @@ def extract_subsets(compress_dir, output_dir):
                     # 打印前几个ID进行比较
                     print(f"  First few CSV IDs: {list(id_to_prompt.keys())[:3]}")
                     print(f"  First few selected IDs: {selected_ids[:3]}")
+                # 检查是否所有ID都匹配
+                elif len(selected_prompts) == len(selected_ids):
+                    print(f"  All selected IDs found in CSV file")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Extract subsets from compression results")

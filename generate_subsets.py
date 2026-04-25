@@ -325,7 +325,7 @@ def find_optimal_n_cluster(data: pd.DataFrame, n_samples: int,
     - Optimal n_clusters
     """
     # Define search space for n_clusters
-    min_clusters = max(2, min(2, n_samples))  # 从2开始寻找最优簇数
+    min_clusters = max(2, min(4, n_samples))  # 从2开始寻找最优簇数
     max_clusters = min(min(100, n_unique), n_samples)
 
     # Generate candidate values

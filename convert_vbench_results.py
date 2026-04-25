@@ -34,53 +34,11 @@ def read_eval_results(eval_dir, prompts):
                         avg_score, video_results = score_data
 
                         for video_info in video_results:
-                            video_path = video_info['video_path']
-                            video_result = video_info['video_results']
-
-                            # 提取子集名称
-                            # 处理不同系统的路径分隔符
-                            parts = video_path.split('/')
-                            subset_name = None
-                            for part in parts:
-                                if part in prompts:
-                                    subset_name = part
-                                    break
-
-                            if subset_name:
-                                # 提取数据id（视频文件名）
-                                video_filename = os.path.basename(video_path)
-                                # 去掉文件扩展名和数字后缀
-                                data_id = os.path.splitext(video_filename)[0]
-                                # 去掉末尾的数字，比如 "prompt-0" 变成 "prompt"
-                                if '-' in data_id:
-                                    data_id = '-'.join(data_id.split('-')[:-1])
-
-                                # 转换分数
-                                if isinstance(video_result, bool):
-                                    score = 1 if video_result else 0
-                                else:
-                                    score = video_result
-
-                                # 存储结果
-                                if subset_name not in results:
-                                    results[subset_name] = {}
-                                if data_id not in results[subset_name]:
-                                    results[subset_name][data_id] = {}
-                                if score_name not in results[subset_name][data_id]:
-                                    results[subset_name][data_id][score_name] = []
-                                results[subset_name][data_id][score_name].append(score)
-            elif isinstance(data, list):
-                # 处理data是列表的情况
-                for item in data:
-                    if isinstance(item, dict):
-                        for score_name, score_data in item.items():
-                            if isinstance(score_data, list) and len(score_data) == 2:
-                                avg_score, video_results = score_data
-
-                                for video_info in video_results:
-                                    video_path = video_info['video_path']
-                                    video_result = video_info['video_results']
-
+                            # 确保video_info是字典
+                            if isinstance(video_info, dict):
+                                video_path = video_info.get('video_path')
+                                video_result = video_info.get('video_results')
+                                if video_path and video_result:
                                     # 提取子集名称
                                     # 处理不同系统的路径分隔符
                                     parts = video_path.split('/')
@@ -113,6 +71,52 @@ def read_eval_results(eval_dir, prompts):
                                         if score_name not in results[subset_name][data_id]:
                                             results[subset_name][data_id][score_name] = []
                                         results[subset_name][data_id][score_name].append(score)
+            elif isinstance(data, list):
+                # 处理data是列表的情况
+                for item in data:
+                    if isinstance(item, dict):
+                        for score_name, score_data in item.items():
+                            if isinstance(score_data, list) and len(score_data) == 2:
+                                avg_score, video_results = score_data
+
+                                for video_info in video_results:
+                                    # 确保video_info是字典
+                                    if isinstance(video_info, dict):
+                                        video_path = video_info.get('video_path')
+                                        video_result = video_info.get('video_results')
+                                        if video_path and video_result:
+                                            # 提取子集名称
+                                            # 处理不同系统的路径分隔符
+                                            parts = video_path.split('/')
+                                            subset_name = None
+                                            for part in parts:
+                                                if part in prompts:
+                                                    subset_name = part
+                                                    break
+
+                                            if subset_name:
+                                                # 提取数据id（视频文件名）
+                                                video_filename = os.path.basename(video_path)
+                                                # 去掉文件扩展名和数字后缀
+                                                data_id = os.path.splitext(video_filename)[0]
+                                                # 去掉末尾的数字，比如 "prompt-0" 变成 "prompt"
+                                                if '-' in data_id:
+                                                    data_id = '-'.join(data_id.split('-')[:-1])
+
+                                                # 转换分数
+                                                if isinstance(video_result, bool):
+                                                    score = 1 if video_result else 0
+                                                else:
+                                                    score = video_result
+
+                                                # 存储结果
+                                                if subset_name not in results:
+                                                    results[subset_name] = {}
+                                                if data_id not in results[subset_name]:
+                                                    results[subset_name][data_id] = {}
+                                                if score_name not in results[subset_name][data_id]:
+                                                    results[subset_name][data_id][score_name] = []
+                                                results[subset_name][data_id][score_name].append(score)
 
     # 计算每个数据id的平均分数
     for subset_name, subset_data in results.items():

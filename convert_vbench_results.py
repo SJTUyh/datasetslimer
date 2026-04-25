@@ -136,7 +136,7 @@ def generate_metadata(eval_dir, output_dir):
     eval_results = read_eval_results(eval_dir, prompts)
 
     # 获取evaluate结果文件夹的名称
-    eval_dir_name = os.path.basename(eval_dir)
+    eval_dir_name = os.path.basename(os.path.normpath(eval_dir))
 
     # 准备info.json数据
     info_data = []

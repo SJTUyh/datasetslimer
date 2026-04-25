@@ -76,6 +76,7 @@ def process_subset(root, subset_dir, prompts):
             original_prompts = prompts[original_subset_name]
             selected_prompts = []
             for idx in selected_indices:
+                idx = int(idx)  # 转换为整数
                 if idx < len(original_prompts):
                     selected_prompts.append(original_prompts[idx])
                 else:

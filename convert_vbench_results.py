@@ -146,6 +146,11 @@ def generate_metadata(eval_dir, output_dir):
                 if feature_name not in existing_fieldnames:
                     existing_fieldnames.append(feature_name)
 
+            # 确保difficulty列位于最后
+            if 'difficulty' in existing_fieldnames:
+                existing_fieldnames.remove('difficulty')
+                existing_fieldnames.append('difficulty')
+
             # 更新现有行
             for row in existing_rows:
                 data_id = row['id']

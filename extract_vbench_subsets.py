@@ -1,7 +1,7 @@
 import os
 import json
 import argparse
-import glob
+import csv
 
 # 定义路径
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "prompts_per_dimension")
@@ -35,78 +35,62 @@ def extract_subsets(compress_dir, output_dir):
 
     # 遍历所有子目录
     for root, dirs, files in os.walk(compress_dir):
-        for file in files:
-            if file.endswith('_ids.json'):
-                json_path = os.path.join(root, file)
-                with open(json_path, 'r', encoding='utf-8') as f:
-                    selected_ids = json.load(f)
+        # 处理representative目录（kmeans压缩）
+        if "representative" in root:
+            subset_dir = kmeans_dir
+            # 处理该目录下的所有文件
+            process_subset(root, subset_dir, prompts)
+        # 处理random目录（随机压缩）
+        elif "random" in root:
+            subset_dir = random_dir
+            # 处理该目录下的所有文件
+            process_subset(root, subset_dir, prompts)
 
-                # 确定是kmeans还是random
-                if "representative" in root:
-                    subset_dir = kmeans_dir
-                elif "random" in root:
-                    subset_dir = random_dir
+# 处理单个子目录
+
+def process_subset(root, subset_dir, prompts):
+    # 找到所有的_ids.json文件
+    for file in os.listdir(root):
+        if file.endswith('_ids.json'):
+            json_path = os.path.join(root, file)
+            with open(json_path, 'r', encoding='utf-8') as f:
+                selected_indices = json.load(f)
+
+            # 提取子集名称
+            base_name = os.path.splitext(file)[0]
+            subset_name = base_name.replace('_ids', '')
+
+            # 找到对应的原始子集名称
+            # 去掉metadata_前缀
+            if subset_name.startswith('metadata_'):
+                original_subset_name = subset_name[len('metadata_'):]
+            else:
+                original_subset_name = subset_name
+
+            # 检查原始子集是否存在
+            if original_subset_name not in prompts:
+                print(f"Warning: Original subset {original_subset_name} not found in prompts")
+                continue
+
+            # 从原始prompts中提取子集
+            original_prompts = prompts[original_subset_name]
+            selected_prompts = []
+            for idx in selected_indices:
+                if idx < len(original_prompts):
+                    selected_prompts.append(original_prompts[idx])
                 else:
-                    continue
+                    print(f"  Warning: Index {idx} out of range for {original_subset_name}")
 
-                # 提取子集名称
-                base_name = os.path.splitext(file)[0]
-                subset_name = base_name.replace('_ids', '')
+            # 保存子集到新文件
+            output_file = os.path.join(subset_dir, f"{original_subset_name}.txt")
+            with open(output_file, 'w', encoding='utf-8') as f:
+                for prompt in selected_prompts:
+                    f.write(prompt + '\n')
 
-                # 找到对应的metadata文件
-                csv_file = os.path.join(root, f"{subset_name}.csv")
-                if not os.path.exists(csv_file):
-                    print(f"Warning: CSV file {csv_file} not found")
-                    continue
-
-                # 读取CSV文件，获取ID到prompt的映射
-                id_to_prompt = {}
-                with open(csv_file, 'r', encoding='utf-8') as f:
-                    lines = f.readlines()
-                    if len(lines) > 1:
-                        header = lines[0].strip().split(',')
-                        if 'id' in header:
-                            id_idx = header.index('id')
-                            for line in lines[1:]:
-                                # 处理带引号的字段
-                                import csv
-                                reader = csv.reader([line])
-                                parts = next(reader)
-                                if len(parts) > id_idx:
-                                    id_to_prompt[parts[id_idx]] = parts[id_idx]
-                        else:
-                            print(f"Warning: 'id' column not found in {csv_file}")
-                            continue
-                    else:
-                        print(f"Warning: CSV file {csv_file} is empty")
-                        continue
-
-                # 提取选中的prompts
-                selected_prompts = []
-                for selected_id in selected_ids:
-                    if selected_id in id_to_prompt:
-                        selected_prompts.append(id_to_prompt[selected_id])
-                    else:
-                        print(f"  Warning: ID {selected_id} not found in CSV file")
-
-                # 保存子集到新文件
-                output_file = os.path.join(subset_dir, f"{subset_name}.txt")
-                with open(output_file, 'w', encoding='utf-8') as f:
-                    for prompt in selected_prompts:
-                        f.write(prompt + '\n')
-
-                # 打印详细信息
-                print(f"Extracted {len(selected_prompts)} samples from {subset_name} to {output_file}")
-                print(f"  Found {len(id_to_prompt)} entries in CSV file")
-                print(f"  Found {len(selected_ids)} selected IDs in JSON file")
-                # 检查是否有ID匹配
-                if len(selected_prompts) == 0 and len(id_to_prompt) > 0 and len(selected_ids) > 0:
-                    # 打印前几个ID进行比较
-                    print(f"  First few CSV IDs: {list(id_to_prompt.keys())[:3]}")
-                    print(f"  First few selected IDs: {selected_ids[:3]}")
-                # 检查是否所有ID都匹配
-                elif len(selected_prompts) == len(selected_ids):
-                    print(f"  All selected IDs found in CSV file")
+            # 打印详细信息
+            print(f"Extracted {len(selected_prompts)} samples from {original_subset_name} to {output_file}")
+            print(f"  Original subset has {len(original_prompts)} samples")
+            print(f"  Selected indices: {selected_indices}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Extract subsets from compression results")

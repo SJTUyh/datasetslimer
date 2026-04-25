@@ -65,11 +65,21 @@ def extract_subsets(compress_dir, output_dir):
                     lines = f.readlines()
                     if len(lines) > 1:
                         header = lines[0].strip().split(',')
-                        id_idx = header.index('id')
-                        for line in lines[1:]:
-                            parts = line.strip().split(',')
-                            if len(parts) > id_idx:
-                                id_to_prompt[parts[id_idx]] = parts[id_idx]
+                        if 'id' in header:
+                            id_idx = header.index('id')
+                            for line in lines[1:]:
+                                # 处理带引号的字段
+                                import csv
+                                reader = csv.reader([line])
+                                parts = next(reader)
+                                if len(parts) > id_idx:
+                                    id_to_prompt[parts[id_idx]] = parts[id_idx]
+                        else:
+                            print(f"Warning: 'id' column not found in {csv_file}")
+                            continue
+                    else:
+                        print(f"Warning: CSV file {csv_file} is empty")
+                        continue
 
                 # 提取选中的prompts
                 selected_prompts = []
@@ -83,7 +93,15 @@ def extract_subsets(compress_dir, output_dir):
                     for prompt in selected_prompts:
                         f.write(prompt + '\n')
 
+                # 打印详细信息
                 print(f"Extracted {len(selected_prompts)} samples from {subset_name} to {output_file}")
+                print(f"  Found {len(id_to_prompt)} entries in CSV file")
+                print(f"  Found {len(selected_ids)} selected IDs in JSON file")
+                # 检查是否有ID匹配
+                if len(selected_prompts) == 0 and len(id_to_prompt) > 0 and len(selected_ids) > 0:
+                    # 打印前几个ID进行比较
+                    print(f"  First few CSV IDs: {list(id_to_prompt.keys())[:3]}")
+                    print(f"  First few selected IDs: {selected_ids[:3]}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Extract subsets from compression results")

@@ -386,7 +386,8 @@ def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression
     Returns:
     - Tuple of (n_clusters, n_samples)
     """
-    n_samples = max(int(data_size * compression_ratio), 10)
+    # 计算压缩后的样本数，不设置最小限制，让压缩率能够正确反映
+    n_samples = max(int(data_size * compression_ratio), 1)
     n_samples = min(n_samples, data_size)
 
     # Calculate number of unique data combinations (excluding id column)

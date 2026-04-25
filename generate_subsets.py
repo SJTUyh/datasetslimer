@@ -416,7 +416,9 @@ def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression
 
     # Validate n_clusters
     original_n_clusters = n_clusters
-    n_clusters = min(n_clusters, n_unique)
+    # 确保簇数不超过压缩后的样本数，同时不超过唯一数据组合数
+    n_clusters = min(n_clusters, n_unique, n_samples)
+    # 确保至少有2个簇以保证聚类有意义
     n_clusters = max(n_clusters, 2)
     if original_n_clusters != n_clusters:
         print(f"  Warning: Adjusted n_clusters from {original_n_clusters} to {n_clusters} to ensure validity")

@@ -26,8 +26,8 @@ for filename in os.listdir(prompts_dir):
         prompt_file = os.path.join(prompts_dir, filename)
         with open(prompt_file, 'r', encoding='utf-8') as f:
             for line in f:
-                # 提取case名称（去掉编号和箭头）
-                case_name = line.strip().split('→')[1].strip()
+                # 提取case名称
+                case_name = line.strip()
 
                 # 构建视频文件模式
                 pattern = f"^{re.escape(case_name)}-0\d*\.mp4$"

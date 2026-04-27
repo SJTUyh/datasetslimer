@@ -56,10 +56,13 @@ def read_eval_results(eval_dir, prompts):
                                     # 转换分数
                                     if isinstance(video_result, bool):
                                         score = 1 if video_result else 0
-                                    else:
+                                    elif isinstance(video_result, (int, float)):
                                         score = video_result
                                         if score > 1:
                                             score = score / 100
+                                    else:
+                                        # 处理其他类型，默认为0
+                                        score = 0
 
                                     # 存储结果
                                     if subset_name not in results:
@@ -75,7 +78,10 @@ def read_eval_results(eval_dir, prompts):
         for data_id, scores in subset_data.items():
             for score_name, score_list in scores.items():
                 if score_list:
-                    results[subset_name][data_id][score_name] = sum(score_list) / len(score_list)
+                    avg_score = sum(score_list) / len(score_list)
+                    if avg_score > 1:
+                        avg_score = avg_score / 100
+                    results[subset_name][data_id][score_name] = avg_score
                 else:
                     results[subset_name][data_id][score_name] = 0
 

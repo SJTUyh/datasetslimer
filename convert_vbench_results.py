@@ -58,6 +58,8 @@ def read_eval_results(eval_dir, prompts):
                                         score = 1 if video_result else 0
                                     else:
                                         score = video_result
+                                        if score > 1:
+                                            score = score / 100
 
                                     # 存储结果
                                     if subset_name not in results:

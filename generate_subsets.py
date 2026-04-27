@@ -181,8 +181,12 @@ def draw_representative_sample(data: pd.DataFrame, labels: np.ndarray, n: int, r
 
     # First, get the point closest to centroid for each cluster
     data_numeric = prepare_data(data, difficulty_map)
+    # Create a copy of data with difficulty converted to numeric
+    data_with_numeric_difficulty = data.copy()
+    if difficulty_map is not None and 'difficulty' in data.columns:
+        data_with_numeric_difficulty['difficulty'] = data_with_numeric_difficulty['difficulty'].map(difficulty_map)
     centroid_samples = pd.DataFrame()
-    remaining_data = data.copy()
+    remaining_data = data_with_numeric_difficulty.copy()
     remaining_indices = np.ones(len(data), dtype=bool)
 
     # Use existing labels to calculate centroids instead of re-running K-means
@@ -211,11 +215,11 @@ def draw_representative_sample(data: pd.DataFrame, labels: np.ndarray, n: int, r
         original_idx = np.where(cluster_mask)[0][closest_idx]
 
         # Add to centroid samples and mark for removal from remaining data
-        centroid_samples = pd.concat([centroid_samples, data.iloc[[original_idx]]])
+        centroid_samples = pd.concat([centroid_samples, data_with_numeric_difficulty.iloc[[original_idx]]])
         remaining_indices[original_idx] = False
 
     # Update remaining data
-    remaining_data = data[remaining_indices]
+    remaining_data = data_with_numeric_difficulty[remaining_indices]
     remaining_labels = labels[remaining_indices]
 
     # Calculate proportional distribution for remaining samples
@@ -257,19 +261,25 @@ def draw_representative_sample(data: pd.DataFrame, labels: np.ndarray, n: int, r
 
     return representative_sample
 
-def get_random_sample(data: pd.DataFrame, sample_size: int, random_state: int = 1) -> pd.DataFrame:
+def get_random_sample(data: pd.DataFrame, sample_size: int, random_state: int = 1, difficulty_map: dict = None) -> pd.DataFrame:
     """
     Get a random sample from the dataset.
 
     Parameters:
     - data: DataFrame to sample from
     - sample_size: Number of samples to draw
+    - random_state: Random seed for reproducibility
+    - difficulty_map: Custom mapping from difficulty strings to numeric values
 
     Returns:
     - Random sample DataFrame
     """
     sample_size = min(sample_size, len(data))
-    return data.sample(n=sample_size, random_state=random_state)
+    sample = data.sample(n=sample_size, random_state=random_state)
+    # Convert difficulty to numeric if needed
+    if difficulty_map is not None and 'difficulty' in sample.columns:
+        sample['difficulty'] = sample['difficulty'].map(difficulty_map)
+    return sample
 
 def save_sample_and_ids(sample: pd.DataFrame, name: str, data_dir: Path) -> None:
     """
@@ -491,7 +501,7 @@ def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, ran
 
     # Generate samples
     representative_sample = draw_representative_sample(data, labels, n_samples, random_state, difficulty_map)
-    random_sample = get_random_sample(data, n_samples, random_state)
+    random_sample = get_random_sample(data, n_samples, random_state, difficulty_map)
 
     # Create directories
     repr_dir.mkdir(exist_ok=True, parents=True)

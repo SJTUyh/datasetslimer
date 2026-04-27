@@ -476,7 +476,11 @@ def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, ran
 
     # Calculate original average scores
     score_cols = [col for col in data.columns if col != "id"]
-    original_avg_scores = np.array(data[score_cols].mean().tolist())
+    # Create a copy of data with difficulty converted to numeric for calculating original average scores
+    data_with_numeric_difficulty = data.copy()
+    if difficulty_map is not None and 'difficulty' in data.columns:
+        data_with_numeric_difficulty['difficulty'] = data_with_numeric_difficulty['difficulty'].map(difficulty_map)
+    original_avg_scores = np.array(data_with_numeric_difficulty[score_cols].mean().tolist())
     print(f"  Original average scores: {original_avg_scores}")
 
     # Calculate optimal parameters

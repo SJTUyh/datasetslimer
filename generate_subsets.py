@@ -185,11 +185,18 @@ def draw_representative_sample(data: pd.DataFrame, labels: np.ndarray, n: int, r
     remaining_data = data.copy()
     remaining_indices = np.ones(len(data), dtype=bool)
 
-    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state)
-    with warnings.catch_warnings():
-        warnings.filterwarnings('ignore', message='Number of distinct clusters.*found smaller than n_clusters.*')
-        kmeans.fit(data_numeric)
-    centroids = kmeans.cluster_centers_
+    # Use existing labels to calculate centroids instead of re-running K-means
+    centroids = []
+    for label in unique_labels[:n_clusters]:
+        cluster_data = data_numeric[labels == label]
+        if len(cluster_data) > 0:
+            centroid = cluster_data.mean().values
+            centroids.append(centroid)
+        else:
+            # If cluster is empty, use a random point
+            random_idx = np.random.choice(len(data_numeric))
+            centroids.append(data_numeric.iloc[random_idx].values)
+    centroids = np.array(centroids)
 
     # Select points closest to centroids
     for label, centroid in zip(unique_labels[:n_clusters], centroids):
@@ -301,8 +308,11 @@ def evaluate_n_cluster(data: pd.DataFrame, n_clusters: int, n_samples: int,
     data_numeric = prepare_data(data, difficulty_map)
     labels, _ = compute_kmeans(data_numeric, n_clusters, random_state)
     sample = draw_representative_sample(data, labels, n_samples, random_state, difficulty_map)
+    if len(sample) == 0:
+        return float('inf')
     sample_avg_scores = sample[score_cols].mean().tolist()
-    return np.sum(np.abs(np.array(sample_avg_scores) - original_avg_scores))
+    deviation = np.sum(np.abs(np.array(sample_avg_scores) - original_avg_scores))
+    return deviation
 
 
 def find_optimal_n_cluster(data: pd.DataFrame, n_samples: int,
@@ -332,14 +342,9 @@ def find_optimal_n_cluster(data: pd.DataFrame, n_samples: int,
     if max_clusters - min_clusters <= 10:
         candidates = list(range(min_clusters, max_clusters + 1))
     else:
-        # Use logarithmic spacing to cover a wide range
-        candidates = []
-        # Add square root value
-        sqrt_val = int(np.sqrt(n_samples))
-        candidates.append(max(min_clusters, min(sqrt_val, max_clusters)))
-        # Add linear steps
+        # Use linear steps to cover the range
         step = max(1, (max_clusters - min_clusters) // 10)
-        candidates.extend(range(min_clusters, max_clusters + 1, step))
+        candidates = list(range(min_clusters, max_clusters + 1, step))
         # Ensure unique and sorted
         candidates = sorted(list(set(candidates)))
 

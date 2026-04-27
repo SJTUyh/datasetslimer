@@ -305,6 +305,10 @@ def evaluate_n_cluster(data: pd.DataFrame, n_clusters: int, n_samples: int,
     Returns:
     - Sum of absolute differences between sample scores and original scores
     """
+    if not score_cols:
+        # No score columns, return infinite deviation to avoid optimization
+        return float('inf')
+
     data_numeric = prepare_data(data, difficulty_map)
     labels, _ = compute_kmeans(data_numeric, n_clusters, random_state)
     sample = draw_representative_sample(data, labels, n_samples, random_state, difficulty_map)
@@ -406,7 +410,7 @@ def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression
     if n_cluster is not None:
         n_clusters = n_cluster
         print(f"  Using n_cluster={n_clusters} from info.json")
-    elif auto_optimize and original_avg_scores is not None and score_cols is not None and difficulty_map is not None:
+    elif auto_optimize and original_avg_scores is not None and score_cols is not None and len(score_cols) > 0 and difficulty_map is not None:
         n_clusters = find_optimal_n_cluster(data, n_samples, original_avg_scores, score_cols,
                                           difficulty_map, random_state, n_unique)
     else:
@@ -419,6 +423,8 @@ def calculate_optimal_parameters(data: pd.DataFrame, data_size: int, compression
         # Print warning if clusters were adjusted
         if initial_n_clusters > n_unique:
             print(f"  Warning: Only {n_unique} unique data combinations found, adjusted n_clusters from {initial_n_clusters} to {n_clusters}")
+        if auto_optimize and (score_cols is None or len(score_cols) == 0):
+            print(f"  Warning: No score columns found, auto-optimization disabled")
 
     # Validate n_clusters
     original_n_clusters = n_clusters
@@ -459,7 +465,7 @@ def process_single_dataset(info_item: dict, input_dir: Path, repr_dir: Path, ran
     print(f"  Loaded {dataset_name} with {data_size} samples")
 
     # Calculate original average scores
-    score_cols = [col for col in data.columns if col.startswith("score")]
+    score_cols = [col for col in data.columns if col != "id"]
     original_avg_scores = np.array(data[score_cols].mean().tolist())
     print(f"  Original average scores: {original_avg_scores}")
 

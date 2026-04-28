@@ -37,41 +37,51 @@ def read_eval_results(eval_dir, prompts):
                             video_path = video_info.get('video_path')
                             video_result = video_info.get('video_results')
                             if video_path and video_result:
-                                # 提取子集名称
-                                parts = video_path.split('/')
-                                subset_name = None
-                                for part in parts:
-                                    if part in prompts:
-                                        subset_name = part
-                                        break
+                                # 提取视频文件名
+                                video_filename = os.path.basename(video_path)
+                                # 分割文件名和扩展名
+                                name, ext = os.path.splitext(video_filename)
+                                # 检查扩展名是否为.mp4
+                                if ext.lower() != '.mp4':
+                                    continue
+                                # 分割名称部分
+                                name_parts = name.split('-')
+                                # 检查是否有至少两部分（case_name和num）
+                                if len(name_parts) < 2:
+                                    continue
+                                # 提取num部分
+                                num_part = name_parts[-1]
+                                # 检查num是否为0-4的数字
+                                if not num_part.isdigit() or int(num_part) not in range(5):
+                                    continue
+                                # 提取case_name
+                                case_name = '-'.join(name_parts[:-1])
+                                # 检查case_name是否在prompts中
+                                if case_name not in prompts:
+                                    continue
+                                # 设置subset_name和data_id
+                                subset_name = case_name
+                                data_id = case_name
 
-                                if subset_name:
-                                    # 提取数据id（视频文件名）
-                                    video_filename = os.path.basename(video_path)
-                                    data_id = os.path.splitext(video_filename)[0]
-                                    # 去掉末尾的数字，比如 "prompt-0" 变成 "prompt"
-                                    if '-' in data_id:
-                                        data_id = '-'.join(data_id.split('-')[:-1])
+                                # 转换分数
+                                if isinstance(video_result, bool):
+                                    score = 1 if video_result else 0
+                                elif isinstance(video_result, (int, float)):
+                                    score = video_result
+                                    if score > 1:
+                                        score = score / 100
+                                else:
+                                    # 处理其他类型，默认为0
+                                    score = 0
 
-                                    # 转换分数
-                                    if isinstance(video_result, bool):
-                                        score = 1 if video_result else 0
-                                    elif isinstance(video_result, (int, float)):
-                                        score = video_result
-                                        if score > 1:
-                                            score = score / 100
-                                    else:
-                                        # 处理其他类型，默认为0
-                                        score = 0
-
-                                    # 存储结果
-                                    if subset_name not in results:
-                                        results[subset_name] = {}
-                                    if data_id not in results[subset_name]:
-                                        results[subset_name][data_id] = {}
-                                    if score_name not in results[subset_name][data_id]:
-                                        results[subset_name][data_id][score_name] = []
-                                    results[subset_name][data_id][score_name].append(score)
+                                # 存储结果
+                                if subset_name not in results:
+                                    results[subset_name] = {}
+                                if data_id not in results[subset_name]:
+                                    results[subset_name][data_id] = {}
+                                if score_name not in results[subset_name][data_id]:
+                                    results[subset_name][data_id][score_name] = []
+                                results[subset_name][data_id][score_name].append(score)
 
     # 计算每个数据id的平均分数
     for subset_name, subset_data in results.items():
@@ -167,9 +177,8 @@ def generate_metadata(eval_dir, output_dir):
                     # 尝试匹配视频文件名中的prompt部分
                     matched = False
                     for video_id, scores in subset_results.items():
-                        # 视频文件名格式可能是 "prompt-0.mp4"，去掉后缀和数字
-                        video_prompt = video_id.split('-')[0]
-                        if video_prompt in data_id:
+                        # 直接使用完整的video_id作为prompt
+                        if video_id in data_id:
                             if score_name in scores:
                                 row[feature_name] = scores[score_name]
                                 matched = True
@@ -202,9 +211,8 @@ def generate_metadata(eval_dir, output_dir):
                         # 尝试匹配视频文件名中的prompt部分
                         matched = False
                         for video_id, scores in subset_results.items():
-                            # 视频文件名格式可能是 "prompt-0.mp4"，去掉后缀和数字
-                            video_prompt = video_id.split('-')[0]
-                            if video_prompt in data_id:
+                            # 直接使用完整的video_id作为prompt
+                            if video_id in data_id:
                                 if score_name in scores:
                                     row[feature_name] = scores[score_name]
                                     matched = True

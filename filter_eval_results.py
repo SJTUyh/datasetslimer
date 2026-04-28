@@ -13,40 +13,41 @@ args = parser.parse_args()
 # 创建输出目录
 os.makedirs(args.output_dir, exist_ok=True)
 
-# 构建case_name到维度的映射
-case_names_by_dimension = {}
+# 收集所有case_name
+all_case_names = set()
 for filename in os.listdir(args.prompts_dir):
     if filename.endswith('.txt'):
-        dimension = filename[:-4]  # 去掉.txt后缀
-        case_names = []
         with open(os.path.join(args.prompts_dir, filename), 'r', encoding='utf-8') as f:
             for line in f:
-                # 提取case_name（去掉行号和箭头）
-                if '→' in line:
-                    case_name = line.split('→')[1].strip()
-                    case_names.append(case_name)
-        case_names_by_dimension[dimension] = set(case_names)
+                # 提取case_name（处理可能的行号和箭头）
+                line = line.strip()
+                if line:
+                    # 检查是否有箭头符号
+                    if '→' in line:
+                        # 有箭头，提取箭头后面的内容
+                        case_name = line.split('→')[1].strip()
+                    else:
+                        # 没有箭头，直接使用整行内容
+                        case_name = line
+                    all_case_names.add(case_name)
+
+print(f"Collected {len(all_case_names)} case names from all prompt files")
 
 # 处理每个eval_results.json文件
 for filename in os.listdir(args.input_dir):
     if filename.endswith('eval_results.json'):
         input_file = os.path.join(args.input_dir, filename)
         output_file = os.path.join(args.output_dir, filename)
-        
+
         # 读取json文件
         with open(input_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        
+
         # 处理每个维度
         for dimension, (_, cases) in data.items():
-            if dimension not in case_names_by_dimension:
-                print(f"Warning: Dimension '{dimension}' not found in prompts_per_dimension directory")
-                continue
-            
-            valid_case_names = case_names_by_dimension[dimension]
             filtered_cases = []
             scores = []
-            
+
             # 过滤case
             for case in cases:
                 video_path = case['video_path']
@@ -54,7 +55,7 @@ for filename in os.listdir(args.input_dir):
                 match = re.search(r'([^/]+)-\d+\.mp4$', video_path)
                 if match:
                     case_name = match.group(1)
-                    if case_name in valid_case_names:
+                    if case_name in all_case_names:
                         filtered_cases.append(case)
                         # 处理video_results得分
                         result = case['video_results']
@@ -63,21 +64,21 @@ for filename in os.listdir(args.input_dir):
                         else:
                             score = result
                         scores.append(score)
-            
+
             # 重新计算平均分
             if scores:
                 avg_score = sum(scores) / len(scores)
             else:
                 avg_score = 0.0
-            
+
             # 更新数据
             data[dimension] = [avg_score, filtered_cases]
             print(f"Dimension '{dimension}': filtered {len(filtered_cases)} cases, average score: {avg_score}")
-        
+
         # 保存修改后的json文件
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
-        
+
         print(f'Processed {filename} and saved to {output_file}')
 
 print('All files processed successfully!')

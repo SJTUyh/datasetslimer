@@ -1,6 +1,6 @@
 {
   "dynamic_degree": [
-    0.47619047619047616,
+    0.5,
     [
       {
         "video_path": "./vbench_videos/pika_1_cla/subject_consistency/a person swimming in ocean-0.mp4",
@@ -9,23 +9,15 @@
       {
         "video_path": "./vbench_videos/pika_1_cla/subject_consistency/a person eating a burger-1.mp4",
         "video_results": true
-      },
-      {
-        "video_path": "./vbench_videos/pika_1_cla/appearance_style/A beautiful coastal beach in spring, waves lapping on sand-0.mp4",
-        "video_results": 0.85
       }
     ]
   ],
   "temporal_consistency": [
-    0.6,
+    0.7,
     [
       {
         "video_path": "./vbench_videos/pika_1_cla/subject_consistency/a person swimming in ocean-0.mp4",
         "video_results": 0.7
-      },
-      {
-        "video_path": "./vbench_videos/pika_1_cla/appearance_style/A beautiful coastal beach in spring, waves lapping on sand-0.mp4",
-        "video_results": 0.9
       }
     ]
   ]

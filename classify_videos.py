@@ -30,7 +30,7 @@ for filename in os.listdir(prompts_dir):
                 case_name = line.strip()
 
                 # 构建视频文件模式
-                pattern = f"^{re.escape(case_name)}.*-([0-4])\.mp4$"
+                pattern = f"^{re.escape(case_name)}-([0-4])\.mp4$"
 
                 # 搜索匹配的视频文件
                 for video_file in os.listdir(args.video_dir):

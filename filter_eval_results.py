@@ -68,6 +68,9 @@ for filename in os.listdir(args.input_dir):
             # 重新计算平均分
             if scores:
                 avg_score = sum(scores) / len(scores)
+                # 如果平均分大于1，除以100
+                if avg_score > 1:
+                    avg_score = avg_score / 100
             else:
                 avg_score = 0.0
 

@@ -47,7 +47,7 @@ for filename in os.listdir(prompts_dir):
 
                         # 复制视频文件
                         shutil.copy2(src_path, dst_path)
-                        print(f"Copied {video_file} to {subset_dir}")
+                        #print(f"Copied {video_file} to {subset_dir}")
                         matched_videos += 1
 
                 # 更新统计字典

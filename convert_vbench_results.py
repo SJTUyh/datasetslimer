@@ -275,7 +275,8 @@ def generate_metadata(eval_dir, output_dir):
             # 写入更新后的CSV文件
             print("Writing updated CSV file...")
             with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=existing_fieldnames)
+                # 使用 quoting=csv.QUOTE_NONE 避免添加引号
+                writer = csv.DictWriter(csvfile, fieldnames=existing_fieldnames, quoting=csv.QUOTE_NONE, escapechar='\\')
                 writer.writeheader()
                 for row in existing_rows:
                     writer.writerow(row)
@@ -287,7 +288,8 @@ def generate_metadata(eval_dir, output_dir):
             print(f"Fieldnames: {fieldnames}")
 
             with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                # 使用 quoting=csv.QUOTE_NONE 避免添加引号
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_NONE, escapechar='\\')
                 writer.writeheader()
 
                 print(f"Writing {len(subset_prompts)} rows...")

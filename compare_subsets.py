@@ -13,13 +13,23 @@ def prepare_numeric_data(data: pd.DataFrame, replace_difficulty_with_number: boo
     """Prepare numeric data for analysis by removing non-numeric columns and filling NaNs."""
     data = data.copy()
     if replace_difficulty_with_number:
-        if difficulty_map is None:
-            difficulty_map = {
-                'level0': 0,
-                'level1': 1,
-                'level2': 2
-            }
-        data["difficulty"] = data["difficulty"].map(difficulty_map)
+        if 'difficulty' in data.columns:
+            if difficulty_map is None:
+                difficulty_map = {
+                    'level0': 0,
+                    'level1': 1,
+                    'level2': 2
+                }
+            # 确保difficulty值是字符串类型
+            data["difficulty"] = data["difficulty"].astype(str)
+            # 打印转换前的困难度值
+            print(f"Difficulty values before mapping: {data['difficulty'].unique()}")
+            # 映射困难度值
+            data["difficulty"] = data["difficulty"].map(difficulty_map)
+            # 打印转换后的困难度值
+            print(f"Difficulty values after mapping: {data['difficulty'].unique()}")
+        else:
+            print("Warning: No difficulty column found for mapping")
 
     # Drop id column if exists, keep others
     drop_cols = []
@@ -152,6 +162,18 @@ def process_single_dataset(dataset_name: str, original_dir: Path, repr_dir: Path
         print(f"Representative sample size: {len(representative)}")
         print(f"Random sample size: {len(random_sample)}")
 
+        # 确保difficulty字段存在且格式一致
+        for df in [full_data, representative, random_sample]:
+            if 'difficulty' in df.columns:
+                # 检查difficulty字段类型
+                print(f"Difficulty column type: {df['difficulty'].dtype}")
+                # 确保所有值都是字符串类型
+                df['difficulty'] = df['difficulty'].astype(str)
+                # 打印前几个值，方便调试
+                print(f"First few difficulty values: {df['difficulty'].head().tolist()}")
+            else:
+                print("Warning: No difficulty column found")
+
         # Prepare numeric versions
         full_numeric = prepare_numeric_data(full_data)
         representative_numeric = prepare_numeric_data(representative)
@@ -196,6 +218,8 @@ def process_single_dataset(dataset_name: str, original_dir: Path, repr_dir: Path
 
     except Exception as e:
         print(f"Error processing {dataset_name}: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def main(original_dir: str,

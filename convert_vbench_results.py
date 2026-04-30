@@ -242,7 +242,7 @@ def generate_metadata(eval_dir, output_dir):
 
             # 检查新特征是否已存在
             for feature_name in new_feature_names:
-                if feature_name not in existing_fieldnames:
+                if feature_name and feature_name not in existing_fieldnames:
                     existing_fieldnames.append(feature_name)
                     print(f"Added new feature: {feature_name}")
 
@@ -251,13 +251,22 @@ def generate_metadata(eval_dir, output_dir):
                 existing_fieldnames.remove('difficulty')
                 existing_fieldnames.append('difficulty')
 
+            # 清理字段名，移除None值
+            existing_fieldnames = [field for field in existing_fieldnames if field is not None]
+            print(f"Cleaned fieldnames: {existing_fieldnames}")
+
             # 更新现有行
             print("Updating existing rows...")
             for row in existing_rows:
-                data_id = row['id']
+                # 清理行中的None字段
+                row = {k: v for k, v in row.items() if k is not None}
+
+                data_id = row.get('id', 'unknown')
                 print(f"  Processing row: {data_id}")
                 for k, score_name in enumerate(score_names):
                     feature_name = new_feature_names[k]
+                    if not feature_name:
+                        continue
                     # 尝试匹配视频文件名中的prompt部分
                     matched = False
                     for video_id, scores in subset_results.items():
@@ -279,13 +288,19 @@ def generate_metadata(eval_dir, output_dir):
                 writer = csv.DictWriter(csvfile, fieldnames=existing_fieldnames, quoting=csv.QUOTE_NONE, escapechar='\\')
                 writer.writeheader()
                 for row in existing_rows:
-                    writer.writerow(row)
+                    # 确保row只包含fieldnames中的字段
+                    filtered_row = {k: v for k, v in row.items() if k in existing_fieldnames}
+                    writer.writerow(filtered_row)
         else:
             print("No existing CSV file, will create a new one")
             # 生成新的CSV文件
             new_feature_names = [f"{eval_dir_name}/{score_name}" for score_name in score_names]
             fieldnames = ['id'] + new_feature_names + ['difficulty']
             print(f"Fieldnames: {fieldnames}")
+
+            # 清理字段名，移除None值
+            fieldnames = [field for field in fieldnames if field is not None]
+            print(f"Cleaned fieldnames: {fieldnames}")
 
             with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
                 # 使用 quoting=csv.QUOTE_NONE 避免添加引号
@@ -302,6 +317,8 @@ def generate_metadata(eval_dir, output_dir):
                     row = {'id': data_id}
                     for k, score_name in enumerate(score_names):
                         feature_name = new_feature_names[k]
+                        if not feature_name:
+                            continue
                         # 尝试匹配视频文件名中的prompt部分
                         matched = False
                         for video_id, scores in subset_results.items():
@@ -318,7 +335,9 @@ def generate_metadata(eval_dir, output_dir):
                     # 简化处理，难度级别设为level0
                     row['difficulty'] = 'level0'
 
-                    writer.writerow(row)
+                    # 确保row只包含fieldnames中的字段
+                    filtered_row = {k: v for k, v in row.items() if k in fieldnames}
+                    writer.writerow(filtered_row)
 
         # 更新info.json
         print("Updating info.json...")

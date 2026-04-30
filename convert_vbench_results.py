@@ -104,10 +104,11 @@ def read_eval_results(eval_dir, prompts):
 
                         # 检查case_name是否在prompts中
                         found = False
+                        matched_subset = None
                         for subset_name, cases in prompts.items():
                             if case_name in cases:
                                 found = True
-                                subset_name = subset_name
+                                matched_subset = subset_name
                                 break
 
                         if not found:
@@ -115,7 +116,7 @@ def read_eval_results(eval_dir, prompts):
                             continue
 
                         # 设置subset_name和data_id
-                        subset_name = subset_name
+                        subset_name = matched_subset
                         data_id = case_name
                         print(f"  Matched subset: {subset_name}")
 
@@ -241,9 +242,11 @@ def generate_metadata(eval_dir, output_dir):
             print(f"New feature names: {new_feature_names}")
 
             # 检查新特征是否已存在
+            added_features = []
             for feature_name in new_feature_names:
                 if feature_name and feature_name not in existing_fieldnames:
                     existing_fieldnames.append(feature_name)
+                    added_features.append(feature_name)
                     print(f"Added new feature: {feature_name}")
 
             # 确保difficulty列位于最后
@@ -254,6 +257,7 @@ def generate_metadata(eval_dir, output_dir):
             # 清理字段名，移除None值
             existing_fieldnames = [field for field in existing_fieldnames if field is not None]
             print(f"Cleaned fieldnames: {existing_fieldnames}")
+            print(f"Added {len(added_features)} new features")
 
             # 更新现有行
             print("Updating existing rows...")
@@ -263,23 +267,24 @@ def generate_metadata(eval_dir, output_dir):
 
                 data_id = row.get('id', 'unknown')
                 print(f"  Processing row: {data_id}")
-                for k, score_name in enumerate(score_names):
-                    feature_name = new_feature_names[k]
+
+                # 为每个新特征添加值
+                for feature_name in new_feature_names:
                     if not feature_name:
                         continue
-                    # 尝试匹配视频文件名中的prompt部分
-                    matched = False
-                    for video_id, scores in subset_results.items():
-                        # 直接使用完整的video_id作为prompt
-                        if video_id in data_id:
+
+                    # 查找当前data_id的分数
+                    score_value = 0
+                    if data_id in subset_results:
+                        scores = subset_results[data_id]
+                        # 提取score_name（去掉eval_dir_name前缀）
+                        if '/' in feature_name:
+                            score_name = feature_name.split('/')[-1]
                             if score_name in scores:
-                                row[feature_name] = scores[score_name]
-                                matched = True
-                                print(f"    Matched {score_name}: {scores[score_name]}")
-                            break
-                    if not matched:
-                        row[feature_name] = 0
-                        print(f"    No match for {score_name}, setting to 0")
+                                score_value = scores[score_name]
+                                print(f"    Found score for {score_name}: {score_value}")
+
+                    row[feature_name] = score_value
 
             # 写入更新后的CSV文件
             print("Writing updated CSV file...")

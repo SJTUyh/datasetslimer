@@ -22,12 +22,18 @@ for filename in os.listdir(prompts_dir):
         # 创建子集目录
         os.makedirs(subset_dir, exist_ok=True)
 
+        # 初始化统计字典，记录匹配0-5个视频的case数量
+        match_counts = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+
         # 读取prompt文件
         prompt_file = os.path.join(prompts_dir, filename)
         with open(prompt_file, 'r', encoding='utf-8') as f:
             for line in f:
                 # 提取case名称
                 case_name = line.strip()
+
+                # 统计匹配的视频数量
+                matched_videos = 0
 
                 # 构建视频文件模式
                 pattern = f"^{re.escape(case_name)}-([0-4])\.mp4$"
@@ -42,5 +48,18 @@ for filename in os.listdir(prompts_dir):
                         # 复制视频文件
                         shutil.copy2(src_path, dst_path)
                         print(f"Copied {video_file} to {subset_dir}")
+                        matched_videos += 1
 
-print("Video classification completed!")
+                # 更新统计字典
+                if matched_videos > 5:
+                    matched_videos = 5
+                match_counts[matched_videos] += 1
+
+        # 输出统计结果
+        print(f"\n统计结果 - {filename}:")
+        print("匹配视频数 | Case数量")
+        print("-----------|----------")
+        for count in range(6):
+            print(f"{count:10} | {match_counts[count]:10}")
+
+print("\nVideo classification completed!")

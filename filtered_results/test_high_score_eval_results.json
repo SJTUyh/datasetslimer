@@ -1,0 +1,15 @@
+{
+  "test_dimension": [
+    0.9,
+    [
+      {
+        "video_path": "./vbench_videos/test/a person swimming in ocean-0.mp4",
+        "video_results": 95
+      },
+      {
+        "video_path": "./vbench_videos/test/a person eating a burger-1.mp4",
+        "video_results": 85
+      }
+    ]
+  ]
+}
